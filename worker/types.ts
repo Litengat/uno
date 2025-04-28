@@ -1,10 +1,13 @@
+import { z } from "zod";
+
 export type Attachment = {
   id: string;
   name: string | undefined;
 };
 
-export type Player = {
-  id: string;
-  name: string | undefined;
-  websocket: WebSocket;
-};
+export const PlayerSchema = z.object({
+  id: z.string(),
+  name: z.string().optional(),
+  websocket: z.instanceof(WebSocket),
+});
+export type Player = z.infer<typeof PlayerSchema>;

@@ -1,42 +1,50 @@
 import z from "zod";
 import { Eventmanager } from "./EventManager";
+import { PlayerSchema } from "../types";
 
-const eventManager = new Eventmanager();
+export function events(eventManager: Eventmanager) {
+  const JoinEvent = z.object({
+    type: z.literal("join"),
+    player: PlayerSchema,
+    name: z.string(),
+  });
 
-const JoinEvent = z.object({
-  type: z.literal("join"),
-  id: z.string(),
-  name: z.string(),
-});
+  eventManager.register({
+    type: "join",
+    schema: JoinEvent,
+    func: (event, GameRoom) => {
+      const player = GameRoom.players.get(event.player.id);
+      if (!player) {
+        return;
+      }
+      player.name = event.name;
+      GameRoom.players.set(event.player.id, player);
+      console.log("Player joined", player);
+      eventManager.sendEvent(event);
+    },
+  });
 
-eventManager.register({
-  type: "join",
-  schema: JoinEvent,
-  func: (event) => {},
-});
+  const LeaveEvent = z.object({
+    type: z.literal("leave"),
+    id: z.string(),
+  });
+  eventManager.register({
+    type: "leave",
+    schema: LeaveEvent,
+    func: (event) => {
+      event.id;
+    },
+  });
 
-const LeaveEvent = z.object({
-  type: z.literal("leave"),
-  id: z.string(),
-});
-eventManager.register({
-  type: "leave",
-  schema: LeaveEvent,
-  func: (event) => {
-    event.id;
-  },
-});
+  const MessageEvent = z.object({
+    type: z.literal("message"),
+    id: z.string(),
+    message: z.string(),
+  });
 
-const MessageEvent = z.object({
-  type: z.literal("message"),
-  id: z.string(),
-  message: z.string(),
-});
-
-eventManager.register({
-  type: "message",
-  schema: MessageEvent,
-  func: (event) => {},
-});
-
-export { eventManager };
+  eventManager.register({
+    type: "message",
+    schema: MessageEvent,
+    func: () => {},
+  });
+}

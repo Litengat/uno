@@ -4,7 +4,7 @@ export default {
   async fetch(
     request: Request,
     env: Env,
-    ctx: ExecutionContext
+    _ctx: ExecutionContext
   ): Promise<Response> {
     console.log("Request received:", request.url);
     if (request.url.endsWith("/websocket")) {

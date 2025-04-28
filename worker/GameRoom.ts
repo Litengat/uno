@@ -1,15 +1,21 @@
 import { DurableObject } from "cloudflare:workers";
 import { Env } from ".";
-import { eventManager } from "./game/events";
+import { events } from "./game/events";
 import { Player, Attachment } from "./types";
 import { safeJsonParse, sendError } from "./utills";
+import { Eventmanager } from "./game/EventManager";
 
 export class GameRoom extends DurableObject {
   players: Map<string, Player> = new Map();
+  eventManager = new Eventmanager(this);
 
   constructor(state: DurableObjectState, env: Env) {
     super(state, env);
+    // create all events
+    events(this.eventManager);
+
     this.players = new Map();
+
     state.getWebSockets().forEach((ws) => {
       const meta = ws.deserializeAttachment() as Attachment | undefined;
       if (!meta) {
@@ -23,7 +29,7 @@ export class GameRoom extends DurableObject {
     });
   }
 
-  async fetch(request: Request): Promise<Response> {
+  async fetch(_request: Request): Promise<Response> {
     // Creates two ends of a WebSocket connection.
     const webSocketPair = new WebSocketPair();
     const [client, server] = Object.values(webSocketPair);
@@ -80,17 +86,27 @@ export class GameRoom extends DurableObject {
       sendError(ws, parsedMessage.error);
       return;
     }
-    const err = eventManager.run({ player: player, ...parsedMessage.value });
+    const err = this.eventManager.run({
+      player: player,
+      ...parsedMessage.value,
+    });
     err.isErr;
   }
 
   async webSocketClose(
     ws: WebSocket,
     code: number,
-    reason: string,
-    wasClean: boolean
+    _reason: string,
+    _wasClean: boolean
   ) {
     // If the client closes the connection, the runtime will invoke the webSocketClose() handler.
     ws.close(code, "Durable Object is closing WebSocket");
+  }
+  // send a message to all players
+  async broadcast(message: string) {
+    console.log("Broadcasting message to all players:", message);
+    this.players.forEach((player) => {
+      player.websocket.send(message);
+    });
   }
 }

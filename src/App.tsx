@@ -1,4 +1,4 @@
-import { use, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import reactLogo from "./assets/react.svg";
 import viteLogo from "/vite.svg";
 import cloudflareLogo from "./assets/Cloudflare_Logo.svg";
@@ -8,17 +8,20 @@ function App() {
   const [count, setCount] = useState(0);
   const [name, setName] = useState("unknown");
   const ws = useRef<WebSocket | null>(null);
-  useEffect(() => {
-    const socket = new WebSocket("ws://localhost:5173/websocket");
-    socket.onopen = () => {
-      console.log("WebSocket connection opened");
-      socket.send("Hello from client");
-      ws.current = socket;
-    };
-    return () => {
-      ws.current?.close();
-    };
-  }, []);
+  // useEffect(() => {
+  //   const socket = new WebSocket("ws://localhost:5173/websocket");
+  //   socket.onopen = () => {
+  //     console.log("WebSocket connection opened");
+  //     socket.send(`{
+  //       "type": "join",
+  //       "name": "max"
+  //       }`);
+  //     ws.current = socket;
+  //   };
+  //   return () => {
+  //     ws.current?.close();
+  //   };
+  // }, []);
 
   return (
     <>
@@ -50,14 +53,7 @@ function App() {
         </p>
       </div>
       <div className="card">
-        <button
-          onClick={() => {
-            fetch("/api/")
-              .then((res) => res.json() as Promise<{ name: string }>)
-              .then((data) => setName(data.name));
-          }}
-          aria-label="get name"
-        >
+        <button onClick={websocket} aria-label="get name">
           Name from API is: {name}
         </button>
         <p>
@@ -71,4 +67,14 @@ function App() {
   );
 }
 
+function websocket() {
+  const socket = new WebSocket("ws://localhost:5173/websocket");
+  socket.onopen = () => {
+    console.log("WebSocket connection opened");
+    socket.send(`{
+        "type": "join",
+        "name": "max"
+        }`);
+  };
+}
 export default App;
