@@ -1,12 +1,11 @@
-export default {
-  fetch(request) {
-    const url = new URL(request.url);
+export interface Env {
+  GAME_ROOM: DurableObjectNamespace<GameRoom>;
+}
 
-    if (url.pathname.startsWith("/api/")) {
-      return Response.json({
-        name: "Cloudflare",
-      });
-    }
-		return new Response(null, { status: 404 });
-  },
-} satisfies ExportedHandler<Env>;
+// Worker
+import worker from "./worker";
+export default worker;
+
+// Durable Object
+import { GameRoom } from "./GameRoom";
+export { GameRoom };
