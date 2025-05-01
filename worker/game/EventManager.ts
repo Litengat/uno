@@ -2,7 +2,6 @@ import z from "zod";
 
 import { err, ok } from "neverthrow";
 import { GameRoom } from "@/GameRoom";
-import { Player } from "@/types";
 
 type EventObject<T extends z.AnyZodObject> = {
   type: string;
@@ -12,7 +11,7 @@ type EventObject<T extends z.AnyZodObject> = {
 
 export type event = {
   type: string;
-  player: Player;
+  playerid: string;
   [key: string]: any;
 };
 
@@ -44,7 +43,6 @@ export class Eventmanager {
       console.error("Event data is invalid", parsed.error);
       return err(`Event ${event.type} data is invalid`);
     }
-    console.log("Parsed event", parsed.data);
     object.func(parsed.data, this.GameRoom);
     return ok();
   }

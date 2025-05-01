@@ -5,7 +5,8 @@
     "types": ["@cloudflare/workers-types/2023-07-01", "vite/client"],
     "paths": {
       "@/*": ["./worker/*"]
-    }
+    },
+    "allowJs": true
   },
 
   "include": ["./worker-configuration.d.ts", "./worker"]

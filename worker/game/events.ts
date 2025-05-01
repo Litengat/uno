@@ -1,11 +1,11 @@
 import z from "zod";
 import { Eventmanager } from "./EventManager";
-import { PlayerSchema } from "../types";
+import { playersTable } from "../db/schema";
 
 export function events(eventManager: Eventmanager) {
   const JoinEvent = z.object({
     type: z.literal("join"),
-    player: PlayerSchema,
+    playerid: z.string(),
     name: z.string(),
   });
 
@@ -13,12 +13,12 @@ export function events(eventManager: Eventmanager) {
     type: "join",
     schema: JoinEvent,
     func: (event, GameRoom) => {
-      const player = GameRoom.players.get(event.player.id);
-      if (!player) {
-        return;
-      }
-      player.name = event.name;
-      GameRoom.players.set(event.player.id, player);
+      const player = {
+        id: event.playerid,
+        name: event.name,
+        cards: JSON.stringify([]),
+      };
+      GameRoom.db.insert(playersTable).values(player);
       console.log("Player joined", player);
       eventManager.sendEvent(event);
     },

@@ -1,32 +1,44 @@
 import { DurableObject } from "cloudflare:workers";
 import { Env } from ".";
 import { events } from "./game/events";
-import { Player, Attachment } from "./types";
+import { Attachment } from "./types";
 import { safeJsonParse, sendError } from "./utills";
 import { Eventmanager } from "./game/EventManager";
+import {
+  drizzle,
+  type DrizzleSqliteDODatabase,
+} from "drizzle-orm/durable-sqlite";
+import { migrate } from "drizzle-orm/durable-sqlite/migrator";
+
+import migrations from "../drizzle/migrations.js";
 
 export class GameRoom extends DurableObject {
-  players: Map<string, Player> = new Map();
-  eventManager = new Eventmanager(this);
+  sessions: Map<string, WebSocket> = new Map();
 
-  constructor(state: DurableObjectState, env: Env) {
-    super(state, env);
+  eventManager = new Eventmanager(this);
+  db: DrizzleSqliteDODatabase;
+
+  constructor(ctx: DurableObjectState, env: Env) {
+    super(ctx, env);
     // create all events
     events(this.eventManager);
+    this.db = drizzle(ctx.storage, { logger: true });
+    this.sessions = new Map();
 
-    this.players = new Map();
-
-    state.getWebSockets().forEach((ws) => {
+    ctx.getWebSockets().forEach((ws) => {
       const meta = ws.deserializeAttachment() as Attachment | undefined;
       if (!meta) {
         return;
       }
-      this.players.set(meta.id, {
-        id: meta.id,
-        name: meta.name,
-        websocket: ws,
-      });
+      this.sessions.set(meta.id, ws);
     });
+    ctx.blockConcurrencyWhile(async () => {
+      await this._migrate();
+    });
+  }
+
+  async _migrate() {
+    migrate(this.db, migrations);
   }
 
   async fetch(_request: Request): Promise<Response> {
@@ -55,11 +67,7 @@ export class GameRoom extends DurableObject {
     } as Attachment);
 
     // adding the player to the players map
-    this.players.set(id, {
-      id: id,
-      name: undefined,
-      websocket: server,
-    });
+    this.sessions.set(id, server);
 
     return new Response(null, {
       status: 101,
@@ -76,7 +84,6 @@ export class GameRoom extends DurableObject {
       sendError(ws, "Invalid attachment");
       return;
     }
-    const player = this.players.get(meta?.id);
 
     const parsedMessage = safeJsonParse(
       typeof message === "string" ? message : new TextDecoder().decode(message)
@@ -87,10 +94,9 @@ export class GameRoom extends DurableObject {
       return;
     }
     const err = this.eventManager.run({
-      player: player,
+      playerid: meta.id,
       ...parsedMessage.value,
     });
-    err.isErr;
   }
 
   async webSocketClose(
@@ -105,8 +111,8 @@ export class GameRoom extends DurableObject {
   // send a message to all players
   async broadcast(message: string) {
     console.log("Broadcasting message to all players:", message);
-    this.players.forEach((player) => {
-      player.websocket.send(message);
+    this.sessions.forEach((session) => {
+      session.send(message);
     });
   }
 }

@@ -24,7 +24,7 @@
   "migrations": [
     {
       "tag": "v1",
-      "new_classes": ["GAME_ROOM"]
+      "new_sqlite_classes": ["GAME_ROOM"]
     }
   ]
 
