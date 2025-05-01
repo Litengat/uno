@@ -1,6 +1,6 @@
 import { useHandStore } from "@/state";
 
-import React, { ReactNode, useState } from "react";
+import { ReactNode, useState } from "react";
 import {
   DndContext,
   PointerSensor,
@@ -8,7 +8,6 @@ import {
   useSensors,
   DragEndEvent,
   DragOverlay,
-  Active,
   Collision,
   ClientRect,
   DragStartEvent,
@@ -79,13 +78,11 @@ export default function DndContextProvider({
 }
 
 function customCollisionDetection({
-  active,
   collisionRect,
   droppableRects,
   droppableContainers,
   pointerCoordinates,
 }: {
-  active: Active;
   collisionRect: ClientRect;
   droppableRects: RectMap;
   droppableContainers: DroppableContainer[];

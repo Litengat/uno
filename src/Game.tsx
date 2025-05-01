@@ -3,6 +3,7 @@ import { useParams } from "react-router";
 import useWebSocket, { ReadyState } from "react-use-websocket";
 import { NameDialog } from "./components/NameDialog";
 import { DndContext, useDroppable } from "@dnd-kit/core";
+import DndContextProvider from "./components/DndContext";
 
 export function Game() {
   const { id } = useParams();
@@ -21,10 +22,10 @@ export function Game() {
   // );
   return (
     <div>
-      <DndContext>
+      <DndContextProvider>
         <div className="flex justify-center items-center">
           <div className="flex justify-center fixed -bottom-120">
-            <Hand ITEM_COUNT={1} />
+            <Hand />
           </div>
         </div>
         <NameDialog />
@@ -33,7 +34,7 @@ export function Game() {
             <DroppableContainer />
           </div>
         </div>
-      </DndContext>
+      </DndContextProvider>
     </div>
   );
 }

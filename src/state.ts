@@ -10,7 +10,12 @@ type HandStore = {
 };
 
 export const useHandStore = create<HandStore>((set) => ({
-  Hand: [],
+  Hand: Array.from({ length: 10 }, (_, i) => ({
+    id: i.toString(),
+    type: "number",
+    number: i,
+    color: "red",
+  })),
   setHand: (hand: Card[]) => set({ Hand: hand }),
   addCard: (card: Card) => set((state) => ({ Hand: [...state.Hand, card] })),
   removeCard: (card: Card) =>

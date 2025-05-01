@@ -13,7 +13,7 @@ import {
 } from "@dnd-kit/core";
 import { SortableContext, useSortable, arrayMove } from "@dnd-kit/sortable";
 import { snapCenterToCursor } from "@dnd-kit/modifiers";
-import Card from "./Card";
+import Card from "./components/Card";
 import { DroppableContainer, RectMap } from "@dnd-kit/core/dist/store";
 import { Coordinates } from "@dnd-kit/utilities";
 
@@ -106,7 +106,6 @@ export function Hand({ ITEM_COUNT = 10 }: { ITEM_COUNT?: number }) {
 }
 
 function customCollisionDetection({
-  active,
   collisionRect,
   droppableRects,
   droppableContainers,
@@ -167,7 +166,6 @@ function CardItem({
     listeners,
     setNodeRef,
     transition,
-    transform,
     isDragging,
   } = useSortable({ id });
 
