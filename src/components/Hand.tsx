@@ -2,9 +2,10 @@ import React from "react";
 
 import { SortableContext, useSortable, arrayMove } from "@dnd-kit/sortable";
 
-import Card from "./Card";
+import { CardCard, CardPreview } from "./Card";
 
 import { useHandStore } from "@/state";
+import { Card } from "@/types";
 
 const RADIUS = 360;
 const MAX_WIDTH = 360 * 1.5;
@@ -27,12 +28,10 @@ export function Hand() {
         // rotate container −half-fan so first card is on the left
         // style={{ transform: `rotate(${(-maxAngle / 2).toFixed(3)}rad)` }}
       >
-        {cards.map((id, i) => (
+        {cards.map((card) => (
           <CardItem
-            key={id.id}
-            id={id.id}
-            index={i}
-            total={cards.length}
+            key={card.id}
+            card={card}
             angleStep={angleStep}
             radius={RADIUS}
           />
@@ -43,13 +42,11 @@ export function Hand() {
 }
 
 function CardItem({
-  id,
+  card,
   angleStep,
   radius,
 }: {
-  id: string;
-  index: number;
-  total: number;
+  card: Card;
   angleStep: number;
   radius: number;
 }) {
@@ -64,7 +61,7 @@ function CardItem({
     transition,
     transform,
     isDragging,
-  } = useSortable({ id });
+  } = useSortable({ id: card.id });
 
   // position calculation for dragging case
   const { x, y, z, r } = (() => {
@@ -99,7 +96,7 @@ function CardItem({
       {...attributes}
       {...listeners}
     >
-      <Card hidden={isDragging} color="red" type="number" number={Number(id)} />
+      <CardCard hidden={isDragging} card={card} />
     </div>
   );
 }

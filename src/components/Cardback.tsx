@@ -7,7 +7,7 @@ interface CardBackProps {
 
 export const CardBack: React.FC<CardBackProps> = ({ customText }) => {
   return (
-    <div className="flex p-6">
+    <div className="flex">
       <div
         className={cn(
           "w-50 aspect-[2/3] rounded-2xl shadow-xl flex flex-col relative overflow-hidden transform transition-transform hover:scale-105 bg-black"

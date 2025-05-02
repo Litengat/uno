@@ -2,14 +2,31 @@ import { Hand } from "@/components/Hand";
 import { useParams } from "react-router";
 import useWebSocket, { ReadyState } from "react-use-websocket";
 import { NameDialog } from "./components/NameDialog";
-import { DndContext, useDroppable } from "@dnd-kit/core";
+
 import DndContextProvider from "./components/DndContext";
+
+import { LayedCardstack } from "./components/LayedCardstack";
+import { useHandStore } from "./state";
+import { Card } from "./types";
+import { useEffect } from "react";
 
 export function Game() {
   const { id } = useParams();
   if (!id) {
     throw new Error("No game ID provided");
   } // Ensure id is a string
+  const hand = useHandStore((state) => state.Hand);
+  const setHand = useHandStore((state) => state.setHand);
+
+  const cards: Card[] = Array.from({ length: 10 }, (_, i) => ({
+    id: crypto.randomUUID(),
+    color: "red",
+    type: "number",
+    number: i,
+  }));
+  useEffect(() => {
+    setHand(cards);
+  }, []);
 
   // const { sendMessage, lastMessage, readyState } = useWebSocket(
   //   `ws://localhost:5173/websocket/${id}`,
@@ -20,6 +37,7 @@ export function Game() {
   //     shouldReconnect: (closeEvent) => true,
   //   }
   // );
+
   return (
     <div>
       <DndContextProvider>
@@ -31,33 +49,10 @@ export function Game() {
         <NameDialog />
         <div className="flex justify-center items-center">
           <div>
-            <DroppableContainer />
+            <LayedCardstack />
           </div>
         </div>
       </DndContextProvider>
-    </div>
-  );
-}
-
-function DroppableContainer() {
-  const { isOver, setNodeRef } = useDroppable({
-    id: "droppable",
-  });
-
-  const style = {
-    width: 200,
-    height: 200,
-    backgroundColor: isOver ? "lightgreen" : "lightgray",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    border: "2px dashed #aaa",
-    borderRadius: 8,
-  };
-
-  return (
-    <div ref={setNodeRef} style={style}>
-      Drop here
     </div>
   );
 }

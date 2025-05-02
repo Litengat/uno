@@ -13,7 +13,7 @@ import {
 } from "@dnd-kit/core";
 import { SortableContext, useSortable, arrayMove } from "@dnd-kit/sortable";
 import { snapCenterToCursor } from "@dnd-kit/modifiers";
-import Card from "./components/Card";
+import { CardPreview } from "./components/Card";
 import { DroppableContainer, RectMap } from "@dnd-kit/core/dist/store";
 import { Coordinates } from "@dnd-kit/utilities";
 
@@ -77,7 +77,11 @@ export function Hand({ ITEM_COUNT = 10 }: { ITEM_COUNT?: number }) {
               userSelect: "none",
             }}
           >
-            <Card color="red" type="number" number={Number(activeId)}></Card>
+            <CardPreview
+              color="red"
+              type="number"
+              number={Number(activeId)}
+            ></CardPreview>
           </div>
         ) : null}
       </DragOverlay>
@@ -202,7 +206,12 @@ function CardItem({
       {...attributes}
       {...listeners}
     >
-      <Card hidden={isDragging} color="red" type="number" number={Number(id)} />
+      <CardPreview
+        hidden={isDragging}
+        color="red"
+        type="number"
+        number={Number(id)}
+      />
     </div>
   );
 }

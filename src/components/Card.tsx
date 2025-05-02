@@ -1,7 +1,7 @@
 import { CardRender } from "@/components/CardRender";
 import { Ban, RefreshCw } from "lucide-react";
 import { memo } from "react";
-import { CardType } from "../types";
+import { Card, CardType } from "../types";
 const colors = {
   red: "bg-rose-700",
   blue: "bg-indigo-700",
@@ -9,6 +9,24 @@ const colors = {
   yellow: "bg-yellow-500",
   black: "bg-black",
 };
+const CardCard = memo(function Card({
+  card,
+  hidden,
+}: {
+  card: Card;
+  hidden?: boolean;
+}) {
+  return (
+    <CardPreview
+      hidden={hidden}
+      color={card.color}
+      type={card.type}
+      number={card.number}
+    />
+  );
+});
+export { CardCard };
+
 const CardPreview = memo(function CardPreview({
   color,
   type,
@@ -75,9 +93,11 @@ const CardPreview = memo(function CardPreview({
           BodyComp={() => <Wind />}
         />
       );
+    case "hidden":
+      return <Skeleton></Skeleton>;
   }
 });
-export default CardPreview;
+export { CardPreview };
 
 function Wind() {
   return (

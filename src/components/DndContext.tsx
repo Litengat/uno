@@ -1,4 +1,4 @@
-import { useHandStore } from "@/state";
+import { useHandStore, useLastCardStore } from "@/state";
 
 import { ReactNode, useState } from "react";
 import {
@@ -14,9 +14,10 @@ import {
 } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 import { snapCenterToCursor } from "@dnd-kit/modifiers";
-import Card from "./Card";
+import { CardCard, CardPreview } from "./Card";
 import { DroppableContainer, RectMap } from "@dnd-kit/core/dist/store";
 import { Coordinates } from "@dnd-kit/utilities";
+import { Card } from "@/types";
 
 export default function DndContextProvider({
   children,
@@ -25,19 +26,30 @@ export default function DndContextProvider({
 }) {
   const cards = useHandStore((state) => state.Hand);
   const setCards = useHandStore((state) => state.setHand);
+  const addLastCard = useLastCardStore((state) => state.addLastCard);
+  const removeCard = useHandStore((state) => state.removeCard);
 
-  const [activeId, setActiveId] = useState<number | string | null>(null);
+  const [activeCard, setActiveCard] = useState<Card | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor));
 
   function handleDragStart(event: DragStartEvent) {
     // setCards((cards) => cards.filter((card) => card !== event.active.id));
-    setActiveId(event.active.id);
+    const card = cards.find((card) => card.id === event.active.id) ?? null;
+    if (!card) return;
+    setActiveCard(card);
   }
-
   const handleDragEnd = (event: DragEndEvent) => {
-    setActiveId(null);
+    setActiveCard(null);
     const { active, over } = event;
+    if (over?.id === "cardStack") {
+      console.log("over", over);
+      const card = cards.find((card) => card.id === active.id) ?? null;
+      removeCard(String(event.active?.id));
+      if (!card) return;
+      addLastCard(card);
+      return;
+    }
     if (over && active.id !== over.id) {
       const newCards = arrayMove(
         cards,
@@ -57,7 +69,7 @@ export default function DndContextProvider({
     >
       {/* {createPortal( */}
       <DragOverlay modifiers={[snapCenterToCursor]}>
-        {activeId ? (
+        {activeCard ? (
           <div
             style={{
               width: "100%",
@@ -68,7 +80,7 @@ export default function DndContextProvider({
               userSelect: "none",
             }}
           >
-            <Card color="red" type="number" number={Number(activeId)}></Card>
+            <CardCard card={activeCard} />
           </div>
         ) : null}
       </DragOverlay>

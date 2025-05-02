@@ -1,12 +1,7 @@
-import { useEffect, useRef, useState } from "react";
-
 import { Button } from "./components/ui/button";
 // import { unstable_ViewTransition as ViewTransition } from "react";
-import { CardBack } from "./components/Cardback";
 
 import { Link } from "react-router";
-
-import { DndHand } from "./Dndhand";
 
 function App() {
   return (

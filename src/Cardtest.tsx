@@ -1,5 +1,5 @@
 import { Link } from "react-router";
-import Card from "./components/Card";
+import { CardPreview } from "./components/Card";
 import { CardBack } from "./components/Cardback";
 
 // import { unstable_ViewTransition as ViewTransition } from "react";
@@ -18,7 +18,7 @@ export function CardTest() {
     <div>
       <Link to="/">Home</Link>
       <div className=" p-6">
-        <Card color="red" type="number" number={1} />
+        <CardPreview color="red" type="number" number={1} />
       </div>
 
       {/* <ViewTransition name="test">
@@ -29,12 +29,12 @@ export function CardTest() {
         <div className="flex ">
           {specialCards.map((type) => (
             <div className=" p-6">
-              <Card key={type} color={color} type={type} />
+              <CardPreview key={type} color={color} type={type} />
             </div>
           ))}
           {Array.from({ length: 10 }, (_, i) => (
             <div className=" p-6">
-              <Card key={i} color={color} type="number" number={i} />
+              <CardPreview key={i} color={color} type="number" number={i} />
             </div>
           ))}
         </div>

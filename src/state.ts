@@ -5,22 +5,17 @@ type HandStore = {
   Hand: Card[];
   setHand: (hand: Card[]) => void;
   addCard: (card: Card) => void;
-  removeCard: (card: Card) => void;
+  removeCard: (cardid: string) => void;
   clearHand: () => void;
 };
 
 export const useHandStore = create<HandStore>((set) => ({
-  Hand: Array.from({ length: 10 }, (_, i) => ({
-    id: i.toString(),
-    type: "number",
-    number: i,
-    color: "red",
-  })),
+  Hand: [],
   setHand: (hand: Card[]) => set({ Hand: hand }),
   addCard: (card: Card) => set((state) => ({ Hand: [...state.Hand, card] })),
-  removeCard: (card: Card) =>
+  removeCard: (cardid: string) =>
     set((state) => ({
-      Hand: state.Hand.filter((c) => c.id !== card.id),
+      Hand: state.Hand.filter((c) => c.id !== cardid),
     })),
   clearHand: () => set({ Hand: [] }),
 }));
@@ -60,13 +55,16 @@ export const usePlayerStore = create<PlayerStore>((set) => ({
 }));
 
 type LastCardStore = {
-  lastCard: Card | null;
-  setLastCard: (card: Card | null) => void;
+  lastCards: Card[] | null;
+  addLastCard: (card: Card) => void;
   clearLastCard: () => void;
 };
 
 export const useLastCardStore = create<LastCardStore>((set) => ({
-  lastCard: null,
-  setLastCard: (card: Card | null) => set({ lastCard: card }),
-  clearLastCard: () => set({ lastCard: null }),
+  lastCards: [],
+  addLastCard: (card: Card) =>
+    set((state) => ({
+      lastCards: state.lastCards ? [...state.lastCards, card] : [card],
+    })),
+  clearLastCard: () => set({ lastCards: null }),
 }));

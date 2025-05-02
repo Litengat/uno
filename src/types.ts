@@ -4,7 +4,8 @@ export type CardType =
   | "reverse"
   | "draw-two"
   | "wild"
-  | "wild-draw-four";
+  | "wild-draw-four"
+  | "hidden";
 
 export type CardColor = "red" | "blue" | "green" | "yellow" | "black";
 
