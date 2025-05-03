@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { EventObject } from "../EventManager";
 import { playersTable } from "~/db/schema";
-import { sendDrawCardEvent } from "./drawCard";
+import { sendDrawCardEvent } from "./DrawCard";
 
 const JoinEventSchema = z.object({
   type: z.literal("Join"),

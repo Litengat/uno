@@ -1,7 +1,7 @@
 import z from "zod";
 import { Eventmanager } from "./EventManager";
 import { JoinEvent } from "./events/Join";
-import { DrawCardEvent } from "./events/drawCard";
+import { DrawCardEvent } from "./events/DrawCard";
 import { LayDownEvent } from "./events/LayDown";
 
 export function events(eventManager: Eventmanager) {
