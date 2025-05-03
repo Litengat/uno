@@ -1,28 +1,15 @@
 import z from "zod";
 import { Eventmanager } from "./EventManager";
-import { playersTable } from "../db/schema";
+import { JoinEvent } from "./events/Join";
+import { DrawCardEvent } from "./events/drawCard";
+import { LayDownEvent } from "./events/LayDown";
 
 export function events(eventManager: Eventmanager) {
-  const JoinEvent = z.object({
-    type: z.literal("join"),
-    playerid: z.string(),
-    name: z.string(),
-  });
+  eventManager.register(JoinEvent);
 
-  eventManager.register({
-    type: "join",
-    schema: JoinEvent,
-    func: (event, GameRoom) => {
-      const player = {
-        id: event.playerid,
-        name: event.name,
-        cards: JSON.stringify([]),
-      };
-      GameRoom.db.insert(playersTable).values(player);
-      console.log("Player joined", player);
-      eventManager.sendEvent(event);
-    },
-  });
+  eventManager.register(DrawCardEvent);
+
+  eventManager.register(LayDownEvent);
 
   const LeaveEvent = z.object({
     type: z.literal("leave"),

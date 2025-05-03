@@ -21,7 +21,7 @@ const CardCard = memo(function Card({
       hidden={hidden}
       color={card.color}
       type={card.type}
-      number={card.number}
+      number={card.number ?? undefined}
     />
   );
 });

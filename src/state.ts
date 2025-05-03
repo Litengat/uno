@@ -54,15 +54,15 @@ export const usePlayerStore = create<PlayerStore>((set) => ({
     })),
 }));
 
-type LastCardStore = {
+type CardStackStore = {
   lastCards: Card[] | null;
-  addLastCard: (card: Card) => void;
+  addCardStackCard: (card: Card) => void;
   clearLastCard: () => void;
 };
 
-export const useLastCardStore = create<LastCardStore>((set) => ({
+export const useCardStackStore = create<CardStackStore>((set) => ({
   lastCards: [],
-  addLastCard: (card: Card) =>
+  addCardStackCard: (card: Card) =>
     set((state) => ({
       lastCards: state.lastCards ? [...state.lastCards, card] : [card],
     })),

@@ -1,28 +1,5 @@
 import { z } from "zod";
 
-// export type CardType =
-//   | "number"
-//   | "skip"
-//   | "reverse"
-//   | "draw-two"
-//   | "wild"
-//   | "wild-draw-four"
-//   | "hidden";
-
-// export type CardColor = "red" | "blue" | "green" | "yellow" | "black";
-
-// export type Card = {
-//   id: string;
-//   type: CardType;
-//   color: CardColor;
-//   number?: number;
-// };
-
-// export type Player = {
-//   id: string;
-//   name: string;
-//   numberOfCards: number;
-// };
 export const CardTypeSchema = z.enum([
   "number",
   "skip",
@@ -48,7 +25,7 @@ export const CardSchema = z.object({
   id: z.string(),
   type: CardTypeSchema,
   color: CardColorSchema,
-  number: z.number().optional().nullable(),
+  number: z.number().optional(),
 });
 export type Card = z.infer<typeof CardSchema>;
 

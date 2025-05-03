@@ -1,18 +1,19 @@
-import { useLastCardStore } from "@/state";
+import { useCardStackStore } from "@/state";
 import { useDroppable } from "@dnd-kit/core";
-import { CardBack } from "./Cardback";
-import { CardCard, CardPreview } from "./Card";
+
+import { CardCard } from "./Card";
 import { Card } from "@/types";
 
 const stackSpread = 5;
 const maxNumberofVisibleCards = 5;
 
 export function LayedCardstack() {
-  const { isOver, setNodeRef } = useDroppable({
+  const { isOver, over, setNodeRef } = useDroppable({
     id: "cardStack",
     data: { type: "cardStack" },
   });
-  const lastCards = useLastCardStore((state) => state.lastCards) || [];
+
+  const lastCards = useCardStackStore((state) => state.lastCards) || [];
   const visableCards = lastCards.slice(-maxNumberofVisibleCards);
   return (
     <div
@@ -26,7 +27,7 @@ export function LayedCardstack() {
         <CardItem
           card={
             {
-              id: crypto.randomUUID(),
+              id: over?.id,
               name: "CardStack",
               type: "hidden",
               color: "black",

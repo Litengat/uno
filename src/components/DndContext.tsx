@@ -1,4 +1,4 @@
-import { useHandStore, useLastCardStore } from "@/state";
+import { useHandStore } from "@/state";
 
 import { ReactNode, useState } from "react";
 import {
@@ -14,10 +14,11 @@ import {
 } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 import { snapCenterToCursor } from "@dnd-kit/modifiers";
-import { CardCard, CardPreview } from "./Card";
+import { CardCard } from "./Card";
 import { DroppableContainer, RectMap } from "@dnd-kit/core/dist/store";
 import { Coordinates } from "@dnd-kit/utilities";
 import { Card } from "@/types";
+import { useWebSocket } from "@/WebsocketProvider";
 
 export default function DndContextProvider({
   children,
@@ -26,12 +27,14 @@ export default function DndContextProvider({
 }) {
   const cards = useHandStore((state) => state.Hand);
   const setCards = useHandStore((state) => state.setHand);
-  const addLastCard = useLastCardStore((state) => state.addLastCard);
+  // const addLastCard = useCardStackStore((state) => state.addCardStackCard);
   const removeCard = useHandStore((state) => state.removeCard);
 
   const [activeCard, setActiveCard] = useState<Card | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor));
+
+  const { sendEvent } = useWebSocket();
 
   function handleDragStart(event: DragStartEvent) {
     // setCards((cards) => cards.filter((card) => card !== event.active.id));
@@ -47,7 +50,10 @@ export default function DndContextProvider({
       const card = cards.find((card) => card.id === active.id) ?? null;
       removeCard(String(event.active?.id));
       if (!card) return;
-      addLastCard(card);
+      // addLastCard(card);
+      sendEvent("LayDown", {
+        cardId: card.id,
+      });
       return;
     }
     if (over && active.id !== over.id) {

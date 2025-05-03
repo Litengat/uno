@@ -1,8 +1,8 @@
 import React from "react";
 
-import { SortableContext, useSortable, arrayMove } from "@dnd-kit/sortable";
+import { SortableContext, useSortable } from "@dnd-kit/sortable";
 
-import { CardCard, CardPreview } from "./Card";
+import { CardCard } from "./Card";
 
 import { useHandStore } from "@/state";
 import { Card } from "@/types";
@@ -59,10 +59,8 @@ function CardItem({
     listeners,
     setNodeRef,
     transition,
-    transform,
     isDragging,
   } = useSortable({ id: card.id });
-
   // position calculation for dragging case
   const { x, y, z, r } = (() => {
     if (index > activeIndex && index <= overIndex) {

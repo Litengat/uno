@@ -110,7 +110,6 @@ export function Hand({ ITEM_COUNT = 10 }: { ITEM_COUNT?: number }) {
 }
 
 function customCollisionDetection({
-  active,
   collisionRect,
   droppableRects,
   droppableContainers,
@@ -171,7 +170,6 @@ function CardItem({
     listeners,
     setNodeRef,
     transition,
-    transform,
     isDragging,
   } = useSortable({ id });
 

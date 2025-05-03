@@ -4,9 +4,9 @@
  */
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "durable-object-stater",
+  "name": "uno",
   "main": "worker/index.ts",
-  "compatibility_date": "2025-04-26",
+  "compatibility_date": "2025-04-24",
   "assets": {
     "not_found_handling": "single-page-application"
   },
@@ -23,10 +23,10 @@
   },
   "migrations": [
     {
-      "tag": "v1",
-      "new_sqlite_classes": ["GAME_ROOM"]
+      "tag": "v1.0.1",
+      "new_sqlite_classes": ["GameRoom"]
     }
-  ]
+  ],
 
   /**
    * Smart Placement
@@ -45,7 +45,11 @@
    * Environment Variables
    * https://developers.cloudflare.com/workers/wrangler/configuration/#environment-variables
    */
-  // "vars": { "MY_VARIABLE": "production_value" },
+  "vars": {
+    "MY_VARIABLE": "production_value",
+    "WEBSOCKET_URL": "ws://localhost:5173/websocket/"
+  }
+
   /**
    * Note: Use secrets to store sensitive data.
    * https://developers.cloudflare.com/workers/configuration/secrets/

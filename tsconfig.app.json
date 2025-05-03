@@ -18,7 +18,10 @@
     //path alias
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "~/components/*": ["./src/components/*"],
+      "~/hooks/*": ["./src/hooks/*"],
+      "~/types/*": ["./types/*"]
     },
 
     /* Linting */

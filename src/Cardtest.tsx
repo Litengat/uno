@@ -1,6 +1,5 @@
 import { Link } from "react-router";
 import { CardPreview } from "./components/Card";
-import { CardBack } from "./components/Cardback";
 
 // import { unstable_ViewTransition as ViewTransition } from "react";
 

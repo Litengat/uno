@@ -3,7 +3,7 @@ import { Env } from ".";
 import { events } from "./game/events";
 import { Attachment } from "./types";
 import { safeJsonParse, sendError } from "./utills";
-import { Eventmanager } from "./game/EventManager";
+import { Eventmanager } from "~/game/EventManager";
 import {
   drizzle,
   type DrizzleSqliteDODatabase,
@@ -11,6 +11,10 @@ import {
 import { migrate } from "drizzle-orm/durable-sqlite/migrator";
 
 import migrations from "../drizzle/migrations.js";
+import { EventMap } from "./game/sendEvents.js";
+import { playersTable } from "./db/schema.js";
+
+export const CardStackID = "cardStack";
 
 export class GameRoom extends DurableObject {
   sessions: Map<string, WebSocket> = new Map();
@@ -107,12 +111,47 @@ export class GameRoom extends DurableObject {
   ) {
     // If the client closes the connection, the runtime will invoke the webSocketClose() handler.
     ws.close(code, "Durable Object is closing WebSocket");
+    const meta = ws.deserializeAttachment() as Attachment | undefined;
+    if (!meta) {
+      sendError(ws, "Invalid attachment");
+      return;
+    }
+    this.sessions.delete(meta.id);
   }
+
   // send a message to all players
   async broadcast(message: string) {
     console.log("Broadcasting message to all players:", message);
+    console.log("Sessions:", this.sessions);
     this.sessions.forEach((session) => {
       session.send(message);
+    });
+  }
+
+  sendEvent<K extends keyof EventMap>(eventName: K, payload: EventMap[K]) {
+    const event = {
+      type: eventName,
+      ...payload,
+    };
+    this.broadcast(JSON.stringify(event));
+  }
+
+  sendPlayerEvent<K extends keyof EventMap>(
+    playerId: string,
+    eventName: K,
+    payload: EventMap[K]
+  ) {
+    const event = {
+      type: eventName,
+      ...payload,
+    };
+    this.sessions.get(playerId)?.send(JSON.stringify(event));
+  }
+
+  createCardStack() {
+    this.db.insert(playersTable).values({
+      id: CardStackID,
+      name: "Card Stack",
     });
   }
 }
