@@ -3,12 +3,13 @@ import { EventObject } from "../EventManager";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
 import { CardStackID } from "~/GameRoom";
-import { Card } from "~/types/Card";
+import { Card, CardColorSchema } from "~/types";
 
 const LayDownEventSchema = z.object({
   type: z.literal("LayDown"),
   playerid: z.string(),
   cardId: z.string(),
+  wildColor: CardColorSchema.optional(),
 });
 
 export const LayDownEvent: EventObject<typeof LayDownEventSchema> = {
@@ -32,12 +33,13 @@ export const LayDownEvent: EventObject<typeof LayDownEventSchema> = {
       console.error("Card not found");
       return;
     }
+    card.color = event.wildColor ?? card.color;
     GameRoom.db
       .update(cardsTable)
-      .set({ holder: CardStackID })
+      .set({ holder: CardStackID, color: event.wildColor })
       .where(eq(cardsTable.id, card.id))
       .run();
-
+    console.log("Card laid down", card);
     GameRoom.sendEvent("CardLaidDown", {
       playerId: event.playerid,
       card: card,

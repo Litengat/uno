@@ -12,6 +12,7 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "./src"),
       "~": path.resolve(__dirname, "./worker"),
+      "~/types/*": path.resolve(__dirname, "./types"),
     },
   },
 });

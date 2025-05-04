@@ -8,7 +8,11 @@ import DndContextProvider from "./components/DndContext";
 import { LayedCardstack } from "./components/LayedCardstack";
 
 import { Button } from "./components/ui/button";
-import { useWebSocket, WebSocketProvider } from "./WebsocketProvider";
+import {
+  useWebSocket,
+  WebSocketProvider,
+} from "@/components/WebsocketProvider";
+import Drawcard from "./components/Drawcard";
 
 export function Game() {
   const { id } = useParams();
@@ -39,7 +43,8 @@ export function Game() {
           <NameDialog />
           <JoinButton />
           <div className="flex justify-center items-center">
-            <div>
+            <div className="flex gap-30">
+              <Drawcard />
               <LayedCardstack />
             </div>
           </div>

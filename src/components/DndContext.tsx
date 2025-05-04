@@ -1,6 +1,6 @@
-import { useHandStore } from "@/state";
+import { useCardStackStore, useHandStore } from "@/state";
 
-import { ReactNode, useState } from "react";
+import { createContext, ReactNode, useContext, useState } from "react";
 import {
   DndContext,
   PointerSensor,
@@ -18,7 +18,22 @@ import { CardCard } from "./Card";
 import { DroppableContainer, RectMap } from "@dnd-kit/core/dist/store";
 import { Coordinates } from "@dnd-kit/utilities";
 import { Card } from "@/types";
-import { useWebSocket } from "@/WebsocketProvider";
+
+type AktiveCardContextType = {
+  activeCard: Card | null;
+};
+
+export const useAktiveCard = (): AktiveCardContextType => {
+  const context = useContext(AktiveCardContext);
+  if (!context) {
+    throw new Error("useAktiveCard must be used within DndContextProvider");
+  }
+  return context;
+};
+
+const AktiveCardContext = createContext<AktiveCardContextType | undefined>(
+  undefined
+);
 
 export default function DndContextProvider({
   children,
@@ -27,14 +42,10 @@ export default function DndContextProvider({
 }) {
   const cards = useHandStore((state) => state.Hand);
   const setCards = useHandStore((state) => state.setHand);
-  // const addLastCard = useCardStackStore((state) => state.addCardStackCard);
-  const removeCard = useHandStore((state) => state.removeCard);
 
   const [activeCard, setActiveCard] = useState<Card | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor));
-
-  const { sendEvent } = useWebSocket();
 
   function handleDragStart(event: DragStartEvent) {
     // setCards((cards) => cards.filter((card) => card !== event.active.id));
@@ -45,17 +56,6 @@ export default function DndContextProvider({
   const handleDragEnd = (event: DragEndEvent) => {
     setActiveCard(null);
     const { active, over } = event;
-    if (over?.id === "cardStack") {
-      console.log("over", over);
-      const card = cards.find((card) => card.id === active.id) ?? null;
-      removeCard(String(event.active?.id));
-      if (!card) return;
-      // addLastCard(card);
-      sendEvent("LayDown", {
-        cardId: card.id,
-      });
-      return;
-    }
     if (over && active.id !== over.id) {
       const newCards = arrayMove(
         cards,
@@ -67,31 +67,32 @@ export default function DndContextProvider({
   };
 
   return (
-    <DndContext
-      sensors={sensors}
-      onDragEnd={handleDragEnd}
-      onDragStart={handleDragStart}
-      collisionDetection={customCollisionDetection}
-    >
-      {/* {createPortal( */}
-      <DragOverlay modifiers={[snapCenterToCursor]}>
-        {activeCard ? (
-          <div
-            style={{
-              width: "100%",
-              height: "100%",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              userSelect: "none",
-            }}
-          >
-            <CardCard card={activeCard} />
-          </div>
-        ) : null}
-      </DragOverlay>
-      {children}
-    </DndContext>
+    <AktiveCardContext.Provider value={{ activeCard: activeCard }}>
+      <DndContext
+        sensors={sensors}
+        onDragEnd={handleDragEnd}
+        onDragStart={handleDragStart}
+        collisionDetection={customCollisionDetection}
+      >
+        <DragOverlay modifiers={[snapCenterToCursor]}>
+          {activeCard ? (
+            <div
+              style={{
+                width: "100%",
+                height: "100%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                userSelect: "none",
+              }}
+            >
+              <CardCard card={activeCard} />
+            </div>
+          ) : null}
+        </DragOverlay>
+        {children}
+      </DndContext>
+    </AktiveCardContext.Provider>
   );
 }
 

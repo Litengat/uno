@@ -1,16 +1,16 @@
 import { z } from "zod";
 import { EventObject } from "../EventManager";
-import { Card } from "~/types/Card";
+import { Card } from "~/types";
 import { GameRoom } from "~/GameRoom";
 import { cardsTable } from "~/db/schema";
 
 const DrawCardSchema = z.object({
-  type: z.literal("drawCard"),
+  type: z.literal("DrawCard"),
   playerid: z.string(),
 });
 
 export const DrawCardEvent: EventObject<typeof DrawCardSchema> = {
-  type: "drawCard",
+  type: "DrawCard",
   schema: DrawCardSchema,
   func: (event, GameRoom) => {
     const card = getRandomCard();
@@ -37,7 +37,7 @@ export function sendDrawCardEvent(playerid: string, GameRoom: GameRoom) {
   });
 }
 
-function getRandomCard(): Card {
+export function getRandomCard(): Card {
   const colors = ["red", "blue", "green", "yellow"] as const;
   const cards = [
     ...Array.from({ length: 10 }, (_, i) => i),

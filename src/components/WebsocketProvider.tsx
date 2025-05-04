@@ -5,12 +5,12 @@ import React, {
   useRef,
   ReactNode,
 } from "react";
-import { safeJsonParse } from "./lib/utils";
-import { Eventmanager } from "./events/EventManager";
+import { safeJsonParse } from "@/lib/utils";
+import { Eventmanager } from "@/events/EventManager";
 import z from "zod";
-import { useCardStackStore, useHandStore, usePlayerStore } from "./state";
-import { CardSchema } from "./types";
-import { EventMap } from "./events/sendEvents";
+import { useCardStackStore, useHandStore, usePlayerStore } from "@/state";
+import { CardSchema } from "@/types";
+import { EventMap } from "@/events/sendEvents";
 
 type WebSocketContextType = {
   sendEvent: <K extends keyof EventMap>(

@@ -122,7 +122,6 @@ export class GameRoom extends DurableObject {
   // send a message to all players
   async broadcast(message: string) {
     console.log("Broadcasting message to all players:", message);
-    console.log("Sessions:", this.sessions);
     this.sessions.forEach((session) => {
       session.send(message);
     });

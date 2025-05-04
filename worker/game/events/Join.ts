@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { EventObject } from "../EventManager";
 import { playersTable } from "~/db/schema";
-import { sendDrawCardEvent } from "./DrawCard";
+import { getRandomCard, sendDrawCardEvent } from "./DrawCard";
 
 const JoinEventSchema = z.object({
   type: z.literal("Join"),
@@ -28,6 +28,10 @@ export const JoinEvent: EventObject<typeof JoinEventSchema> = {
     });
     Array.from({ length: 7 }).forEach(() => {
       sendDrawCardEvent(event.playerid, GameRoom);
+    });
+    GameRoom.sendEvent("CardLaidDown", {
+      playerId: event.playerid,
+      card: getRandomCard(),
     });
   },
 };

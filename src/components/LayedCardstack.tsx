@@ -1,8 +1,14 @@
-import { useCardStackStore } from "@/state";
-import { useDroppable } from "@dnd-kit/core";
+import { useCardStackStore, useHandStore } from "@/state";
+import { useDndMonitor, useDroppable } from "@dnd-kit/core";
 
 import { CardCard } from "./Card";
-import { Card } from "@/types";
+import { Card, CardColor } from "@/types";
+import { useAktiveCard } from "./DndContext";
+import { canBeLaidOnTop } from "@/lib/LayDownVerifier";
+import { useWebSocket } from "./WebsocketProvider";
+import WildCardColorDialog from "./WildCardColorDialog";
+import { useState } from "react";
+import { set } from "zod";
 
 const stackSpread = 5;
 const maxNumberofVisibleCards = 5;
@@ -12,30 +18,88 @@ export function LayedCardstack() {
     id: "cardStack",
     data: { type: "cardStack" },
   });
-
+  const cards = useHandStore((state) => state.Hand);
   const lastCards = useCardStackStore((state) => state.lastCards) || [];
   const visableCards = lastCards.slice(-maxNumberofVisibleCards);
+  const cardStack = useCardStackStore((state) => state.lastCards);
+  const removeCard = useHandStore((state) => state.removeCard);
+  const addLastCard = useCardStackStore((state) => state.addCardStackCard);
+
+  const { sendEvent } = useWebSocket();
+  const { activeCard } = useAktiveCard();
+
+  const [open, setOpen] = useState(false);
+  const [dialogCard, setDialogCard] = useState<Card | null>(null);
+
+  useDndMonitor({
+    onDragEnd(event) {
+      const { active, over } = event;
+      if (over?.id === "cardStack") {
+        if (!cardStack) return;
+        const lastcard = cardStack[cardStack.length - 1];
+        if (!lastcard || !activeCard) return;
+        if (!canBeLaidOnTop(lastcard, activeCard)) return;
+
+        removeCard(String(active?.id));
+        if (
+          activeCard.type === "wild" ||
+          activeCard.type === "wild-draw-four"
+        ) {
+          setOpen(true);
+          setDialogCard(activeCard);
+          return;
+        }
+
+        removeCard(String(active?.id));
+        addLastCard(activeCard);
+        sendEvent("LayDown", {
+          cardId: activeCard.id,
+        });
+        return;
+      }
+    },
+  });
+
+  const onColorSelect = (color: CardColor) => {
+    console.log("Selected color:", color);
+    if (!dialogCard) return;
+    console.log("Active card:", dialogCard);
+    const card = { ...dialogCard, color: color };
+    addLastCard(card);
+    sendEvent("LayDown", {
+      cardId: card.id,
+      wildColor: color,
+    });
+  };
+
   return (
     <div
       ref={setNodeRef}
       className="w-50 aspect-[2/3] items-center justify-center"
     >
+      <WildCardColorDialog
+        onColorSelect={onColorSelect}
+        open={open}
+        setOpen={setOpen}
+      />
       {visableCards.map((lastCard, index) => (
         <CardItem card={lastCard} index={index} />
       ))}
-      {isOver && (
-        <CardItem
-          card={
-            {
-              id: over?.id,
-              name: "CardStack",
-              type: "hidden",
-              color: "black",
-            } as Card
-          }
-          index={visableCards.length}
-        ></CardItem>
-      )}
+      {isOver &&
+        activeCard &&
+        canBeLaidOnTop(visableCards[visableCards.length - 1], activeCard) && (
+          <CardItem
+            card={
+              {
+                id: over?.id,
+                name: "CardStack",
+                type: "hidden",
+                color: "black",
+              } as Card
+            }
+            index={visableCards.length}
+          ></CardItem>
+        )}
     </div>
   );
 }

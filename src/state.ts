@@ -63,8 +63,16 @@ type CardStackStore = {
 export const useCardStackStore = create<CardStackStore>((set) => ({
   lastCards: [],
   addCardStackCard: (card: Card) =>
-    set((state) => ({
-      lastCards: state.lastCards ? [...state.lastCards, card] : [card],
-    })),
+    set((state) => {
+      // Check if the card is already in the lastCards array
+      // If it is, return the current state
+      // If not, add the card to the lastCards array
+      if (state.lastCards?.find((c) => c.id === card.id)) {
+        return { lastCards: state.lastCards };
+      }
+      return {
+        lastCards: state.lastCards ? [...state.lastCards, card] : [card],
+      };
+    }),
   clearLastCard: () => set({ lastCards: null }),
 }));

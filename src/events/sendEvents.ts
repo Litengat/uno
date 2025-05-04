@@ -5,5 +5,6 @@ export type EventMap = {
   Join: { playerId: string; name: string };
   PlayerLeft: { playerId: string };
   CardDraw: { card: Card };
-  LayDown: { cardId: string };
+  LayDown: { cardId: string; wildColor?: string };
+  DrawCard: {};
 };
