@@ -13,10 +13,7 @@ export const DrawCardEvent: EventObject<typeof DrawCardSchema> = {
   type: "DrawCard",
   schema: DrawCardSchema,
   func: (event, GameRoom) => {
-    const card = getRandomCard();
-    GameRoom.sendPlayerEvent(event.playerid, "CardDrawn", {
-      card: card,
-    });
+    sendDrawCardEvent(event.playerid, GameRoom);
   },
 };
 

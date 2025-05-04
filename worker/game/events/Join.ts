@@ -29,6 +29,7 @@ export const JoinEvent: EventObject<typeof JoinEventSchema> = {
     Array.from({ length: 7 }).forEach(() => {
       sendDrawCardEvent(event.playerid, GameRoom);
     });
+
     GameRoom.sendEvent("CardLaidDown", {
       playerId: event.playerid,
       card: getRandomCard(),
