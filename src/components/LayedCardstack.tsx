@@ -7,8 +7,7 @@ import { useAktiveCard } from "./DndContext";
 import { canBeLaidOnTop } from "@/lib/LayDownVerifier";
 import { useWebSocket } from "./WebsocketProvider";
 import WildCardColorDialog from "./WildCardColorDialog";
-import { useState } from "react";
-import { set } from "zod";
+import { memo, useState } from "react";
 
 const stackSpread = 5;
 const maxNumberofVisibleCards = 5;
@@ -18,7 +17,7 @@ export function LayedCardstack() {
     id: "cardStack",
     data: { type: "cardStack" },
   });
-  const cards = useHandStore((state) => state.Hand);
+
   const lastCards = useCardStackStore((state) => state.lastCards) || [];
   const visableCards = lastCards.slice(-maxNumberofVisibleCards);
   const cardStack = useCardStackStore((state) => state.lastCards);
@@ -104,7 +103,13 @@ export function LayedCardstack() {
   );
 }
 
-function CardItem({ card, index }: { card: Card; index: number }) {
+const CardItem = memo(function CardItem({
+  card,
+  index,
+}: {
+  card: Card;
+  index: number;
+}) {
   const angle = uuidToNumberInRange(card.id, 0, 60) - 30;
   const offset = stackSpread * index;
   return (
@@ -122,8 +127,7 @@ function CardItem({ card, index }: { card: Card; index: number }) {
       <CardCard card={card} />
     </div>
   );
-}
-
+});
 function uuidToNumberInRange(uuid: string, min: number, max: number): number {
   // Simple hash function (FNV-1a hash)
   let hash = 2166136261;

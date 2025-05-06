@@ -46,6 +46,10 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
   const addPlayer = usePlayerStore((state) => state.addPlayer);
   const addCard = useHandStore((state) => state.addCard);
   const addCardStackCard = useCardStackStore((state) => state.addCardStackCard);
+  const decreaseplayerCards = usePlayerStore(
+    (state) => state.decreaseplayerCards
+  );
+  const updatePlayerCards = usePlayerStore((state) => state.updatePlayerCards);
   useEffect(() => {
     socketRef.current = new WebSocket(url);
 
@@ -90,16 +94,16 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
   };
 
   eventManager.register({
-    type: "Join",
+    type: "PlayerJoined",
     schema: z.object({
-      type: z.literal("join"),
-      playerid: z.string(),
+      type: z.literal("PlayerJoined"),
+      playerId: z.string(),
       name: z.string(),
       numberOfCards: z.number(),
     }),
     func: (event) => {
       addPlayer({
-        id: event.playerid,
+        id: event.playerId,
         name: event.name,
         numberOfCards: event.numberOfCards,
       });
@@ -116,6 +120,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
       addCard(event.card);
     },
   });
+
   eventManager.register({
     type: "CardLaidDown",
     schema: z.object({
@@ -125,6 +130,18 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     }),
     func: (event) => {
       addCardStackCard(event.card);
+      decreaseplayerCards(event.playerId);
+    },
+  });
+  eventManager.register({
+    type: "UpdateCardCount",
+    schema: z.object({
+      type: z.literal("UpdateCardCount"),
+      playerId: z.string(),
+      numberOfCards: z.number(),
+    }),
+    func: (event) => {
+      updatePlayerCards(event.playerId, event.numberOfCards);
     },
   });
 

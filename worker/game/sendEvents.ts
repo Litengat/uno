@@ -6,4 +6,5 @@ export type EventMap = {
   PlayerLeft: { playerId: string };
   CardDrawn: { card: Card };
   CardLaidDown: { playerId: string; card: Card };
+  UpdateCardCount: { playerId: string; numberOfCards: number };
 };

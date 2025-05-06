@@ -58,3 +58,4 @@ export default tseslint.config({
 # Links
 
 - https://codepen.io/marssantoso/pen/RwvqJOa
+- https://www.npmjs.com/package/react-textfit?activeTab=readme

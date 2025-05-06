@@ -1,11 +1,11 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
+
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { CardColor } from "@/types";
@@ -35,7 +35,7 @@ const WildCardColorDialog: React.FC<WildCardColorDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="sm:max-w-md border-4 border-black rounded-xl bg-white">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-center text-2xl font-bold">
             Select a color

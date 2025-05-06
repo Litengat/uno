@@ -13,6 +13,8 @@ import {
   WebSocketProvider,
 } from "@/components/WebsocketProvider";
 import Drawcard from "./components/Drawcard";
+import OtherPlayer from "./components/OtherPlayer";
+import { usePlayerStore } from "./state";
 
 export function Game() {
   const { id } = useParams();
@@ -36,17 +38,20 @@ export function Game() {
       <WebSocketProvider url={url}>
         <DndContextProvider>
           <div className="flex justify-center items-center">
-            <div className="flex justify-center fixed -bottom-120">
+            <div className="flex justify-center fixed -bottom-120 z-10">
               <Hand />
             </div>
           </div>
           <NameDialog />
           <JoinButton />
+          {/* <div className=" absolute w-screen h-screen"> */}
           <div className="flex justify-center items-center">
             <div className="flex gap-30">
               <Drawcard />
               <LayedCardstack />
             </div>
+
+            <Otherplayers />
           </div>
         </DndContextProvider>
       </WebSocketProvider>
@@ -61,12 +66,33 @@ function JoinButton() {
       onClick={() => {
         websocket.sendEvent("Join", {
           name: "max",
-          playerId: "",
         });
       }}
     >
       {" "}
       join
     </Button>
+  );
+}
+
+const playerPostions = [
+  { pos: "top-[15%] left-10", rot: 110 },
+  { pos: "top-[75%] left-10", rot: 70 },
+  { pos: "top-[15%] right-10", rot: -110 },
+  { pos: "top-[15%] right-10", rot: -70 },
+];
+
+function Otherplayers() {
+  const players = usePlayerStore((store) => store.players);
+  // const otherplayers = players.filter((p) => p.id ===)
+  console.log(players);
+  return (
+    <div className="absolute left-0 top-0 right-0 bottom-0 w-screen h-screen -z-1">
+      {players.map((player, i) => (
+        <div className={`absolute ${playerPostions[i].pos}`}>
+          <OtherPlayer player={player} rotation={playerPostions[i].rot} />
+        </div>
+      ))}
+    </div>
   );
 }

@@ -3,6 +3,7 @@ import { EventObject } from "../EventManager";
 import { Card } from "~/types";
 import { GameRoom } from "~/GameRoom";
 import { cardsTable } from "~/db/schema";
+import { count, eq } from "drizzle-orm";
 
 const DrawCardSchema = z.object({
   type: z.literal("DrawCard"),
@@ -17,7 +18,7 @@ export const DrawCardEvent: EventObject<typeof DrawCardSchema> = {
   },
 };
 
-export function sendDrawCardEvent(playerid: string, GameRoom: GameRoom) {
+export async function sendDrawCardEvent(playerid: string, GameRoom: GameRoom) {
   const card = getRandomCard();
   GameRoom.db
     .insert(cardsTable)
@@ -31,6 +32,16 @@ export function sendDrawCardEvent(playerid: string, GameRoom: GameRoom) {
     .run();
   GameRoom.sendPlayerEvent(playerid, "CardDrawn", {
     card: card,
+  });
+
+  GameRoom.sendEvent("UpdateCardCount", {
+    playerId: playerid,
+    numberOfCards: (
+      await GameRoom.db
+        .select({ count: count() })
+        .from(cardsTable)
+        .where(eq(cardsTable.holder, playerid))
+    )[0].count,
   });
 }
 

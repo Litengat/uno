@@ -27,6 +27,8 @@ type PlayerStore = {
   removePlayer: (player: Player) => void;
   clearPlayers: () => void;
   updatePlayer: (player: Player) => void;
+  increasePlayerCards: (playerId: string) => void;
+  decreaseplayerCards: (playerId: string) => void;
   updatePlayerCards: (playerId: string, numberOfCards: number) => void;
 };
 
@@ -44,6 +46,18 @@ export const usePlayerStore = create<PlayerStore>((set) => ({
     set((state) => ({
       players: state.players.map((p) =>
         p.id === player.id ? { ...p, ...player } : p
+      ),
+    })),
+  increasePlayerCards: (playerId: string) =>
+    set((state) => ({
+      players: state.players.map((p) =>
+        p.id === playerId ? { ...p, numberOfCards: p.numberOfCards + 1 } : p
+      ),
+    })),
+  decreaseplayerCards: (playerId: string) =>
+    set((state) => ({
+      players: state.players.map((p) =>
+        p.id === playerId ? { ...p, numberOfCards: p.numberOfCards - 1 } : p
       ),
     })),
   updatePlayerCards: (playerId: string, numberOfCards: number) =>
@@ -75,4 +89,35 @@ export const useCardStackStore = create<CardStackStore>((set) => ({
       };
     }),
   clearLastCard: () => set({ lastCards: null }),
+}));
+
+type GameStore = {
+  yourId: string | null;
+  setYourId: (id: string | null) => void;
+  gameStarted: boolean;
+  setGameStarted: (started: boolean) => void;
+  gameOver: boolean;
+  setGameOver: (over: boolean) => void;
+  currentPlayer: string | null;
+  setCurrentPlayer: (playerId: string | null) => void;
+  currentColor: string | null;
+  setCurrentColor: (color: string | null) => void;
+  winner: string | null;
+  setWinner: (winner: string | null) => void;
+};
+
+export const useGameStore = create<GameStore>((set) => ({
+  yourId: null,
+  setYourId: (id: string | null) => set({ yourId: id }),
+  gameStarted: false,
+  setGameStarted: (started: boolean) => set({ gameStarted: started }),
+  gameOver: false,
+  setGameOver: (over: boolean) => set({ gameOver: over }),
+  currentPlayer: null,
+  setCurrentPlayer: (playerId: string | null) =>
+    set({ currentPlayer: playerId }),
+  currentColor: null,
+  setCurrentColor: (color: string | null) => set({ currentColor: color }),
+  winner: null,
+  setWinner: (winner: string | null) => set({ winner }),
 }));

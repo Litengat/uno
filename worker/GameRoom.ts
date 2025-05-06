@@ -103,6 +103,15 @@ export class GameRoom extends DurableObject {
     });
   }
 
+  async webSocketOpen(ws: WebSocket) {
+    // If the client opens the connection, the runtime will invoke the webSocketOpen() handler.
+    const meta = ws.deserializeAttachment() as Attachment | undefined;
+    if (!meta) {
+      sendError(ws, "Invalid attachment");
+      return;
+    }
+    this.sessions.set(meta.id, ws);
+  }
   async webSocketClose(
     ws: WebSocket,
     code: number,
