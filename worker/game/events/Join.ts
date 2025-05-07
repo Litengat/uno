@@ -1,7 +1,9 @@
-import { z } from "zod";
+import { number, z } from "zod";
 import { EventObject } from "../EventManager";
 import { playersTable } from "~/db/schema";
 import { getRandomCard, sendDrawCardEvent } from "./DrawCard";
+
+import { updatePlayers } from "../sendEvents";
 
 const JoinEventSchema = z.object({
   type: z.literal("Join"),
@@ -12,34 +14,23 @@ const JoinEventSchema = z.object({
 export const JoinEvent: EventObject<typeof JoinEventSchema> = {
   type: "Join",
   schema: JoinEventSchema,
-  func: (event, GameRoom) => {
-    const player = {
-      id: event.playerid,
-      name: event.name,
-    };
-    GameRoom.db.insert(playersTable).values(player);
-
-    console.log("Player joined", player);
-
-    GameRoom.sendEvent("PlayerJoined", {
+  func: async (event, GameRoom) => {
+    GameRoom.db
+      .insert(playersTable)
+      .values({
+        id: event.playerid,
+        name: event.name,
+      })
+      .run();
+    GameRoom.sendPlayerEvent(event.playerid, "YourID", {
       playerId: event.playerid,
-      name: event.name,
-      numberOfCards: 7,
     });
+
     Array.from({ length: 7 }).forEach(() => {
       sendDrawCardEvent(event.playerid, GameRoom);
     });
-    const players = GameRoom.db.select().from(playersTable).all();
+    updatePlayers(GameRoom);
 
-    players.forEach((player) => {
-      if (player.id !== event.playerid) {
-        GameRoom.sendPlayerEvent(player.id, "PlayerJoined", {
-          playerId: event.playerid,
-          name: event.name,
-          numberOfCards: 7,
-        });
-      }
-    });
     GameRoom.sendEvent("CardLaidDown", {
       playerId: event.playerid,
       card: getRandomCard(),

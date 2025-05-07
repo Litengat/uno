@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { Card, Player } from "./types";
+import { devtools } from "zustand/middleware";
 
 type HandStore = {
   Hand: Card[];
@@ -9,16 +10,25 @@ type HandStore = {
   clearHand: () => void;
 };
 
-export const useHandStore = create<HandStore>((set) => ({
-  Hand: [],
-  setHand: (hand: Card[]) => set({ Hand: hand }),
-  addCard: (card: Card) => set((state) => ({ Hand: [...state.Hand, card] })),
-  removeCard: (cardid: string) =>
-    set((state) => ({
-      Hand: state.Hand.filter((c) => c.id !== cardid),
-    })),
-  clearHand: () => set({ Hand: [] }),
-}));
+export const useHandStore = create<HandStore>()(
+  devtools(
+    (set) => ({
+      Hand: [],
+      setHand: (hand: Card[]) => set({ Hand: hand }),
+      addCard: (card: Card) =>
+        set((state) => ({ Hand: [...state.Hand, card] })),
+      removeCard: (cardid: string) =>
+        set((state) => ({
+          Hand: state.Hand.filter((c) => c.id !== cardid),
+        })),
+      clearHand: () => set({ Hand: [] }),
+    }),
+    {
+      name: "HandStore",
+      enabled: process.env.NODE_ENV !== "production",
+    }
+  )
+);
 
 type PlayerStore = {
   players: Player[];
@@ -32,41 +42,49 @@ type PlayerStore = {
   updatePlayerCards: (playerId: string, numberOfCards: number) => void;
 };
 
-export const usePlayerStore = create<PlayerStore>((set) => ({
-  players: [],
-  setPlayers: (players: Player[]) => set({ players }),
-  addPlayer: (player: Player) =>
-    set((state) => ({ players: [...state.players, player] })),
-  removePlayer: (player: Player) =>
-    set((state) => ({
-      players: state.players.filter((p) => p.id !== player.id),
-    })),
-  clearPlayers: () => set({ players: [] }),
-  updatePlayer: (player: Player) =>
-    set((state) => ({
-      players: state.players.map((p) =>
-        p.id === player.id ? { ...p, ...player } : p
-      ),
-    })),
-  increasePlayerCards: (playerId: string) =>
-    set((state) => ({
-      players: state.players.map((p) =>
-        p.id === playerId ? { ...p, numberOfCards: p.numberOfCards + 1 } : p
-      ),
-    })),
-  decreaseplayerCards: (playerId: string) =>
-    set((state) => ({
-      players: state.players.map((p) =>
-        p.id === playerId ? { ...p, numberOfCards: p.numberOfCards - 1 } : p
-      ),
-    })),
-  updatePlayerCards: (playerId: string, numberOfCards: number) =>
-    set((state) => ({
-      players: state.players.map((p) =>
-        p.id === playerId ? { ...p, numberOfCards } : p
-      ),
-    })),
-}));
+export const usePlayerStore = create<PlayerStore>()(
+  devtools(
+    (set) => ({
+      players: [],
+      setPlayers: (players: Player[]) => set({ players }),
+      addPlayer: (player: Player) =>
+        set((state) => ({ players: [...state.players, player] })),
+      removePlayer: (player: Player) =>
+        set((state) => ({
+          players: state.players.filter((p) => p.id !== player.id),
+        })),
+      clearPlayers: () => set({ players: [] }),
+      updatePlayer: (player: Player) =>
+        set((state) => ({
+          players: state.players.map((p) =>
+            p.id === player.id ? { ...p, ...player } : p
+          ),
+        })),
+      increasePlayerCards: (playerId: string) =>
+        set((state) => ({
+          players: state.players.map((p) =>
+            p.id === playerId ? { ...p, numberOfCards: p.numberOfCards + 1 } : p
+          ),
+        })),
+      decreaseplayerCards: (playerId: string) =>
+        set((state) => ({
+          players: state.players.map((p) =>
+            p.id === playerId ? { ...p, numberOfCards: p.numberOfCards - 1 } : p
+          ),
+        })),
+      updatePlayerCards: (playerId: string, numberOfCards: number) =>
+        set((state) => ({
+          players: state.players.map((p) =>
+            p.id === playerId ? { ...p, numberOfCards } : p
+          ),
+        })),
+    }),
+    {
+      name: "PlayerStore",
+      enabled: process.env.NODE_ENV !== "production",
+    }
+  )
+);
 
 type CardStackStore = {
   lastCards: Card[] | null;
@@ -74,23 +92,30 @@ type CardStackStore = {
   clearLastCard: () => void;
 };
 
-export const useCardStackStore = create<CardStackStore>((set) => ({
-  lastCards: [],
-  addCardStackCard: (card: Card) =>
-    set((state) => {
-      // Check if the card is already in the lastCards array
-      // If it is, return the current state
-      // If not, add the card to the lastCards array
-      if (state.lastCards?.find((c) => c.id === card.id)) {
-        return { lastCards: state.lastCards };
-      }
-      return {
-        lastCards: state.lastCards ? [...state.lastCards, card] : [card],
-      };
+export const useCardStackStore = create<CardStackStore>()(
+  devtools(
+    (set) => ({
+      lastCards: [],
+      addCardStackCard: (card: Card) =>
+        set((state) => {
+          // Check if the card is already in the lastCards array
+          // If it is, return the current state
+          // If not, add the card to the lastCards array
+          if (state.lastCards?.find((c) => c.id === card.id)) {
+            return { lastCards: state.lastCards };
+          }
+          return {
+            lastCards: state.lastCards ? [...state.lastCards, card] : [card],
+          };
+        }),
+      clearLastCard: () => set({ lastCards: null }),
     }),
-  clearLastCard: () => set({ lastCards: null }),
-}));
-
+    {
+      name: "CardStackStore",
+      enabled: process.env.NODE_ENV !== "production",
+    }
+  )
+);
 type GameStore = {
   yourId: string | null;
   setYourId: (id: string | null) => void;
@@ -106,18 +131,26 @@ type GameStore = {
   setWinner: (winner: string | null) => void;
 };
 
-export const useGameStore = create<GameStore>((set) => ({
-  yourId: null,
-  setYourId: (id: string | null) => set({ yourId: id }),
-  gameStarted: false,
-  setGameStarted: (started: boolean) => set({ gameStarted: started }),
-  gameOver: false,
-  setGameOver: (over: boolean) => set({ gameOver: over }),
-  currentPlayer: null,
-  setCurrentPlayer: (playerId: string | null) =>
-    set({ currentPlayer: playerId }),
-  currentColor: null,
-  setCurrentColor: (color: string | null) => set({ currentColor: color }),
-  winner: null,
-  setWinner: (winner: string | null) => set({ winner }),
-}));
+export const useGameStore = create<GameStore>()(
+  devtools(
+    (set) => ({
+      yourId: null,
+      setYourId: (id: string | null) => set({ yourId: id }),
+      gameStarted: false,
+      setGameStarted: (started: boolean) => set({ gameStarted: started }),
+      gameOver: false,
+      setGameOver: (over: boolean) => set({ gameOver: over }),
+      currentPlayer: null,
+      setCurrentPlayer: (playerId: string | null) =>
+        set({ currentPlayer: playerId }),
+      currentColor: null,
+      setCurrentColor: (color: string | null) => set({ currentColor: color }),
+      winner: null,
+      setWinner: (winner: string | null) => set({ winner }),
+    }),
+    {
+      name: "GameStore",
+      enabled: process.env.NODE_ENV !== "production",
+    }
+  )
+);

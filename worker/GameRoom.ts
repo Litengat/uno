@@ -13,6 +13,7 @@ import { migrate } from "drizzle-orm/durable-sqlite/migrator";
 import migrations from "../drizzle/migrations.js";
 import { EventMap } from "./game/sendEvents.js";
 import { playersTable } from "./db/schema.js";
+import { eq } from "drizzle-orm";
 
 export const CardStackID = "cardStack";
 
@@ -126,6 +127,7 @@ export class GameRoom extends DurableObject {
       return;
     }
     this.sessions.delete(meta.id);
+    this.db.delete(playersTable).where(eq(playersTable.id, meta.id)).run();
   }
 
   // send a message to all players

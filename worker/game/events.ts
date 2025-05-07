@@ -15,6 +15,7 @@ export function events(eventManager: Eventmanager) {
     type: z.literal("leave"),
     id: z.string(),
   });
+
   eventManager.register({
     type: "leave",
     schema: LeaveEvent,

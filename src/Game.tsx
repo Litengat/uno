@@ -14,7 +14,7 @@ import {
 } from "@/components/WebsocketProvider";
 import Drawcard from "./components/Drawcard";
 import OtherPlayer from "./components/OtherPlayer";
-import { usePlayerStore } from "./state";
+import { useGameStore, usePlayerStore } from "./state";
 
 export function Game() {
   const { id } = useParams();
@@ -84,11 +84,13 @@ const playerPostions = [
 
 function Otherplayers() {
   const players = usePlayerStore((store) => store.players);
-  // const otherplayers = players.filter((p) => p.id ===)
+  const yourId = useGameStore((store) => store.yourId);
+  const otherplayers = players.filter((p) => p.id !== yourId).slice(0, 4);
+
   console.log(players);
   return (
     <div className="absolute left-0 top-0 right-0 bottom-0 w-screen h-screen -z-1">
-      {players.map((player, i) => (
+      {otherplayers.map((player, i) => (
         <div className={`absolute ${playerPostions[i].pos}`}>
           <OtherPlayer player={player} rotation={playerPostions[i].rot} />
         </div>

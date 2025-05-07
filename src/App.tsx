@@ -1,6 +1,6 @@
 import { Button } from "./components/ui/button";
 // import { unstable_ViewTransition as ViewTransition } from "react";
-import OtherPlayer from "./components/OtherPlayer";
+
 import { Link } from "react-router";
 
 function App() {

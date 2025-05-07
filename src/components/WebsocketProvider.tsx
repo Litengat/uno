@@ -6,12 +6,8 @@ import React, {
   ReactNode,
 } from "react";
 import { safeJsonParse } from "@/lib/utils";
-import { Eventmanager } from "@/events/EventManager";
-import z from "zod";
-import { useCardStackStore, useHandStore, usePlayerStore } from "@/state";
-import { CardSchema } from "@/types";
 import { EventMap } from "@/events/sendEvents";
-
+import { eventManager } from "@/events/events";
 type WebSocketContextType = {
   sendEvent: <K extends keyof EventMap>(
     eventName: K,
@@ -41,15 +37,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
   children,
 }) => {
   const socketRef = useRef<WebSocket | null>(null);
-  const eventManager = new Eventmanager();
 
-  const addPlayer = usePlayerStore((state) => state.addPlayer);
-  const addCard = useHandStore((state) => state.addCard);
-  const addCardStackCard = useCardStackStore((state) => state.addCardStackCard);
-  const decreaseplayerCards = usePlayerStore(
-    (state) => state.decreaseplayerCards
-  );
-  const updatePlayerCards = usePlayerStore((state) => state.updatePlayerCards);
   useEffect(() => {
     socketRef.current = new WebSocket(url);
 
@@ -92,58 +80,6 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
       console.warn("WebSocket not open");
     }
   };
-
-  eventManager.register({
-    type: "PlayerJoined",
-    schema: z.object({
-      type: z.literal("PlayerJoined"),
-      playerId: z.string(),
-      name: z.string(),
-      numberOfCards: z.number(),
-    }),
-    func: (event) => {
-      addPlayer({
-        id: event.playerId,
-        name: event.name,
-        numberOfCards: event.numberOfCards,
-      });
-    },
-  });
-
-  eventManager.register({
-    type: "CardDrawn",
-    schema: z.object({
-      type: z.literal("CardDrawn"),
-      card: CardSchema,
-    }),
-    func: (event) => {
-      addCard(event.card);
-    },
-  });
-
-  eventManager.register({
-    type: "CardLaidDown",
-    schema: z.object({
-      type: z.literal("CardLaidDown"),
-      playerId: z.string(),
-      card: CardSchema,
-    }),
-    func: (event) => {
-      addCardStackCard(event.card);
-      decreaseplayerCards(event.playerId);
-    },
-  });
-  eventManager.register({
-    type: "UpdateCardCount",
-    schema: z.object({
-      type: z.literal("UpdateCardCount"),
-      playerId: z.string(),
-      numberOfCards: z.number(),
-    }),
-    func: (event) => {
-      updatePlayerCards(event.playerId, event.numberOfCards);
-    },
-  });
 
   return (
     <WebSocketContext.Provider value={{ sendEvent }}>
