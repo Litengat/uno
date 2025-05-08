@@ -29,7 +29,6 @@ export class GameRoom extends DurableObject {
     events(this.eventManager);
     this.db = drizzle(ctx.storage, { logger: true });
     this.sessions = new Map();
-
     ctx.getWebSockets().forEach((ws) => {
       const meta = ws.deserializeAttachment() as Attachment | undefined;
       if (!meta) {
