@@ -7,4 +7,5 @@ export type EventMap = {
   CardDraw: { card: Card };
   LayDown: { cardId: string; wildColor?: string };
   DrawCard: {};
+  StartGame: {};
 };

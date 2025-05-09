@@ -11,6 +11,7 @@ export type EventMap = {
   UpdateCardCount: { playerId: string; numberOfCards: number };
   YourID: { playerId: string };
   GameStarted: {};
+  NextTurn: { playerId: string };
 };
 
 export function updatePlayers(GameRoom: GameRoom) {

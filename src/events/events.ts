@@ -14,6 +14,7 @@ const addCardStackCard = useCardStackStore.getState().addCardStackCard;
 const decreaseplayerCards = usePlayerStore.getState().decreaseplayerCards;
 const updatePlayerCards = usePlayerStore.getState().updatePlayerCards;
 const setYourId = useGameStore.getState().setYourId;
+const setCurrentPlayer = useGameStore.getState().setCurrentPlayer;
 
 export const eventManager = new Eventmanager();
 
@@ -70,5 +71,15 @@ eventManager.register({
   }),
   func: (event) => {
     setYourId(event.playerId);
+  },
+});
+eventManager.register({
+  type: "NextTurn",
+  schema: z.object({
+    type: z.literal("NextTurn"),
+    playerId: z.string(),
+  }),
+  func: (event) => {
+    setCurrentPlayer(event.playerId);
   },
 });

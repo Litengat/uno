@@ -1,4 +1,4 @@
-import { cardsTable } from "~/db/schema";
+import { cardsTable, playersTable } from "~/db/schema";
 import { EventObject } from "../EventManager";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
@@ -43,6 +43,47 @@ export const LayDownEvent: EventObject<typeof LayDownEventSchema> = {
     GameRoom.sendEvent("CardLaidDown", {
       playerId: event.playerid,
       card: card,
+    });
+    const player = GameRoom.db
+      .select()
+      .from(playersTable)
+      .where(eq(playersTable.id, event.playerid))
+      .get();
+
+    if (!player) {
+      console.error("Player not found");
+      return;
+    }
+
+    let nextPlayer = (
+      await GameRoom.db
+        .select()
+        .from(playersTable)
+        .where(eq(playersTable.position, player.position + 1))
+        .limit(1)
+    )[0];
+    console.log("Next player", nextPlayer);
+    if (!nextPlayer) {
+      nextPlayer = (
+        await GameRoom.db
+          .select()
+          .from(playersTable)
+          .where(eq(playersTable.position, 0))
+          .limit(1)
+      )[0];
+      if (!nextPlayer) {
+        console.error("Next player not found");
+        return;
+      }
+    }
+    console.log("Next player", nextPlayer);
+    if (!nextPlayer) {
+      console.error("Next player not found, but this should not happen");
+      return;
+    }
+
+    GameRoom.sendEvent("NextTurn", {
+      playerId: nextPlayer.id,
     });
   },
 };

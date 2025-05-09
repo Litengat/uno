@@ -25,7 +25,13 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useWebSocket } from "./WebsocketProvider";
 
-export function NameDialog({}) {
+export function NameDialog({
+  open,
+  setOpen,
+}: {
+  open: boolean;
+  setOpen: (open: boolean) => void;
+}) {
   // 1. Define your form.
   const { sendEvent } = useWebSocket();
   const form = useForm<z.infer<typeof formSchema>>({
@@ -45,10 +51,7 @@ export function NameDialog({}) {
     console.log(values);
   }
   return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button variant="outline">Edit Profile</Button>
-      </DialogTrigger>
+    <Dialog open={open}>
       <DialogContent className="sm:max-w-[425px]">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
@@ -66,7 +69,7 @@ export function NameDialog({}) {
                 <FormItem>
                   <FormLabel>Username</FormLabel>
                   <FormControl>
-                    <Input placeholder="shadcn" {...field} />
+                    <Input placeholder="Max " {...field} />
                   </FormControl>
                   <FormDescription>This is your display name.</FormDescription>
                   <FormMessage />
@@ -80,7 +83,9 @@ export function NameDialog({}) {
                 </Button>
               </DialogClose>
 
-              <Button type="submit">Save</Button>
+              <Button type="submit" onClick={() => setOpen(false)}>
+                Save
+              </Button>
             </DialogFooter>
           </form>
         </Form>

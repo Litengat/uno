@@ -15,6 +15,7 @@ import {
 import Drawcard from "./components/Drawcard";
 import OtherPlayer from "./components/OtherPlayer";
 import { useGameStore, usePlayerStore } from "./state";
+import { useState } from "react";
 
 export function Game() {
   const { id } = useParams();
@@ -22,6 +23,8 @@ export function Game() {
     throw new Error("No game ID provided");
   } // Ensure id is a string
   const url = import.meta.env.VITE_WEBSOCKET_URL + id;
+
+  const [openNameDialog, setOpenNameDialog] = useState(true);
 
   // const { sendMessage, lastMessage, readyState } = useWebSocket(
   //   `ws://localhost:5173/websocket/${id}`,
@@ -42,8 +45,8 @@ export function Game() {
               <Hand />
             </div>
           </div>
-          <NameDialog />
-          <JoinButton />
+          <NameDialog open={openNameDialog} setOpen={setOpenNameDialog} />
+          <StartButton />
           {/* <div className=" absolute w-screen h-screen"> */}
           <div className="flex justify-center items-center">
             <div className="flex gap-30">
@@ -59,18 +62,16 @@ export function Game() {
   );
 }
 
-function JoinButton() {
+function StartButton() {
   const websocket = useWebSocket();
   return (
     <Button
       onClick={() => {
-        websocket.sendEvent("Join", {
-          name: "max",
-        });
+        websocket.sendEvent("StartGame", {});
       }}
     >
       {" "}
-      join
+      Start
     </Button>
   );
 }

@@ -3,6 +3,7 @@ import { Eventmanager } from "./EventManager";
 import { JoinEvent } from "./events/Join";
 import { DrawCardEvent } from "./events/DrawCard";
 import { LayDownEvent } from "./events/LayDown";
+import { StartGameEvent } from "./events/StartGame";
 
 export function events(eventManager: Eventmanager) {
   eventManager.register(JoinEvent);
@@ -10,6 +11,8 @@ export function events(eventManager: Eventmanager) {
   eventManager.register(DrawCardEvent);
 
   eventManager.register(LayDownEvent);
+
+  eventManager.register(StartGameEvent);
 
   const LeaveEvent = z.object({
     type: z.literal("leave"),

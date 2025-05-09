@@ -1,4 +1,4 @@
-import { useCardStackStore, useHandStore } from "@/state";
+import { useCardStackStore, useGameStore, useHandStore } from "@/state";
 import { useDndMonitor, useDroppable } from "@dnd-kit/core";
 
 import { CardCard } from "./Card";
@@ -23,7 +23,8 @@ export function LayedCardstack() {
   const cardStack = useCardStackStore((state) => state.lastCards);
   const removeCard = useHandStore((state) => state.removeCard);
   const addLastCard = useCardStackStore((state) => state.addCardStackCard);
-
+  const yourId = useGameStore((state) => state.yourId);
+  const currenPlayer = useGameStore((state) => state.currentPlayer);
   const { sendEvent } = useWebSocket();
   const { activeCard } = useAktiveCard();
 
@@ -35,6 +36,9 @@ export function LayedCardstack() {
       const { active, over } = event;
       if (over?.id === "cardStack") {
         if (!cardStack) return;
+        // checks if it's your turn
+        if (yourId !== currenPlayer) return;
+
         const lastcard = cardStack[cardStack.length - 1];
         if (!lastcard || !activeCard) return;
         if (!canBeLaidOnTop(lastcard, activeCard)) return;

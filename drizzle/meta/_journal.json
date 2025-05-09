@@ -36,6 +36,20 @@
       "when": 1746612118234,
       "tag": "0004_silky_whirlwind",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1746800912700,
+      "tag": "0005_massive_blade",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1746801328912,
+      "tag": "0006_soft_may_parker",
+      "breakpoints": true
     }
   ]
 }
