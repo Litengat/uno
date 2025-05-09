@@ -27,7 +27,7 @@ export class GameRoom extends DurableObject {
     super(ctx, env);
     // create all events
     events(this.eventManager);
-    this.db = drizzle(ctx.storage, { logger: true });
+    this.db = drizzle(ctx.storage);
     this.sessions = new Map();
     ctx.getWebSockets().forEach((ws) => {
       const meta = ws.deserializeAttachment() as Attachment | undefined;
@@ -161,6 +161,7 @@ export class GameRoom extends DurableObject {
     this.db.insert(playersTable).values({
       id: CardStackID,
       name: "Card Stack",
+      position: -1,
     });
   }
 }

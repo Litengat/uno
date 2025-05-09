@@ -19,13 +19,13 @@ export default {
           status: 426,
         });
       }
-      console.log("WebSocket Upgrade request received");
+      // console.log("WebSocket Upgrade request received");
       // This example will refer to the same Durable Object,
       // since the name "foo" is hardcoded.
       const name = path[1] ?? "foo";
       let id = env.GAME_ROOM.idFromName(name);
       let stub = env.GAME_ROOM.get(id);
-      console.log("Stub created:", stub);
+
       return stub.fetch(request);
     }
 

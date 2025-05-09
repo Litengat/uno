@@ -25,6 +25,8 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useWebSocket } from "./WebsocketProvider";
 
+const DefautName = "defautName";
+
 export function NameDialog({
   open,
   setOpen,
@@ -37,7 +39,7 @@ export function NameDialog({
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      username: "",
+      username: localStorage.getItem(DefautName) ?? "",
     },
   });
 
@@ -48,6 +50,9 @@ export function NameDialog({
     sendEvent("Join", {
       name: values.username,
     });
+    setOpen(false);
+    localStorage.setItem(DefautName, values.username);
+
     console.log(values);
   }
   return (
@@ -69,7 +74,10 @@ export function NameDialog({
                 <FormItem>
                   <FormLabel>Username</FormLabel>
                   <FormControl>
-                    <Input placeholder="Max " {...field} />
+                    <Input
+                      placeholder={localStorage.getItem(DefautName) ?? "Max"}
+                      {...field}
+                    />
                   </FormControl>
                   <FormDescription>This is your display name.</FormDescription>
                   <FormMessage />
@@ -83,9 +91,7 @@ export function NameDialog({
                 </Button>
               </DialogClose>
 
-              <Button type="submit" onClick={() => setOpen(false)}>
-                Save
-              </Button>
+              <Button type="submit">Save</Button>
             </DialogFooter>
           </form>
         </Form>
