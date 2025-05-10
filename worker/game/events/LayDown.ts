@@ -1,9 +1,11 @@
-import { cardsTable, playersTable } from "~/db/schema";
+import { cardsTable, gameTable, playersTable } from "~/db/schema";
 import { EventObject } from "../EventManager";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
-import { CardStackID } from "~/GameRoom";
+import { CardStackID, GameRoom } from "~/GameRoom";
 import { Card, CardColorSchema } from "~/types";
+import { getNextPlayerIndex, getPlayer, getPlayerbyPositon } from "../players";
+import { sendDrawCardEvent } from "./DrawCard";
 
 const LayDownEventSchema = z.object({
   type: z.literal("LayDown"),
@@ -39,51 +41,84 @@ export const LayDownEvent: EventObject<typeof LayDownEventSchema> = {
       .set({ holder: CardStackID, color: event.wildColor })
       .where(eq(cardsTable.id, card.id))
       .run();
+
+    switch (card.type) {
+      case "reverse":
+        await reverse(GameRoom);
+        break;
+      case "draw-two":
+        nextPlayerDraw(GameRoom, 2);
+        break;
+      case "wild-draw-four":
+        nextPlayerDraw(GameRoom, 4);
+        break;
+      case "skip":
+        const nextIndex = await getNextPlayerIndex(GameRoom);
+        if (nextIndex !== undefined) {
+          console.error("next index dosen't exists");
+          return;
+        }
+        updateCurrentPosition(GameRoom, nextIndex);
+        break;
+    }
+
+    // send Card laid down Event
     console.log("Card laid down", card);
     GameRoom.sendEvent("CardLaidDown", {
       playerId: event.playerid,
       card: card,
     });
-    const player = GameRoom.db
-      .select()
-      .from(playersTable)
-      .where(eq(playersTable.id, event.playerid))
-      .get();
 
-    if (!player) {
-      console.error("Player not found");
+    const nextIndex = await getNextPlayerIndex(GameRoom);
+
+    console.log("nextIndex", nextIndex);
+    if (nextIndex === undefined) {
+      console.error("next index dosen't exists");
       return;
     }
 
-    let nextPlayer = (
-      await GameRoom.db
-        .select()
-        .from(playersTable)
-        .where(eq(playersTable.position, player.position + 1))
-        .limit(1)
-    )[0];
-    console.log("Next player", nextPlayer);
-    if (!nextPlayer) {
-      nextPlayer = (
-        await GameRoom.db
-          .select()
-          .from(playersTable)
-          .where(eq(playersTable.position, 0))
-          .limit(1)
-      )[0];
-      if (!nextPlayer) {
-        console.error("Next player not found");
-        return;
-      }
-    }
-    console.log("Next player", nextPlayer);
-    if (!nextPlayer) {
-      console.error("Next player not found, but this should not happen");
-      return;
-    }
+    const nextPlayer = await getPlayerbyPositon(GameRoom, nextIndex);
+
+    updateCurrentPosition(GameRoom, nextIndex);
+    // console.log("Next player", nextPlayer);
+    // if (!nextPlayer) {
+    //   console.error("Next player not found, but this should not happen");
+    //   return;
+    // }
+
+    // const players = await GameRoom.db.select().from(playersTable).all();
+    // console.log(players);
 
     GameRoom.sendEvent("NextTurn", {
       playerId: nextPlayer.id,
     });
+    return;
   },
 };
+
+async function reverse(GameRoom: GameRoom) {
+  const game = await GameRoom.getGame();
+  console.log("omg reverse");
+  const flippedDirection = game?.direction === 1 ? -1 : 1;
+  GameRoom.db.update(gameTable).set({ direction: flippedDirection }).all();
+}
+
+async function nextPlayerDraw(GameRoom: GameRoom, amount: number) {
+  const nextIndex = await getNextPlayerIndex(GameRoom);
+  if (nextIndex === undefined) {
+    console.error("Next Player could draw the cards, because he dosn't exists");
+    return;
+  }
+  console.log("next Index in draw", nextIndex);
+  const nextPlayer = await getPlayerbyPositon(GameRoom, nextIndex);
+  Array.from({ length: amount }).map(() => {
+    sendDrawCardEvent(nextPlayer.id, GameRoom);
+  });
+}
+
+function updateCurrentPosition(GameRoom: GameRoom, position: number) {
+  void GameRoom.db
+    .update(gameTable)
+    .set({ currentPlayerIndex: position })
+    .run();
+}

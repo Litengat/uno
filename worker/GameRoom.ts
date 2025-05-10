@@ -12,10 +12,12 @@ import { migrate } from "drizzle-orm/durable-sqlite/migrator";
 
 import migrations from "../drizzle/migrations.js";
 import { EventMap } from "./game/sendEvents.js";
-import { playersTable } from "./db/schema.js";
+import { gameTable, playersTable } from "./db/schema.js";
 import { eq } from "drizzle-orm";
 
 export const CardStackID = "cardStack";
+
+export const GameID = 0;
 
 export class GameRoom extends DurableObject {
   sessions: Map<string, WebSocket> = new Map();
@@ -39,6 +41,14 @@ export class GameRoom extends DurableObject {
     ctx.blockConcurrencyWhile(async () => {
       await this._migrate();
     });
+
+    this.db
+      .insert(gameTable)
+      .values({
+        id: GameID,
+      })
+      .onConflictDoNothing()
+      .run();
   }
 
   async _migrate() {
@@ -163,5 +173,18 @@ export class GameRoom extends DurableObject {
       name: "Card Stack",
       position: -1,
     });
+  }
+  getGame() {
+    const game = this.db
+      .select()
+      .from(gameTable)
+      .where(eq(gameTable.id, GameID))
+      .get();
+    if (!game) {
+      console.log("Game dosen't exist in Database");
+      throw new Error("Game dosen't exist in Database");
+    }
+
+    return game;
   }
 }

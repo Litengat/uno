@@ -24,3 +24,10 @@ export const cardsrelations = relations(cardsTable, ({ one }) => ({
     references: [playersTable.id],
   }),
 }));
+
+export const gameTable = sqliteTable("game_table", {
+  id: int().primaryKey(),
+  direction: int().default(1).notNull(), // 1 or -1
+  currentPlayerIndex: int().default(0).notNull(),
+  startCardCount: int().default(7),
+});

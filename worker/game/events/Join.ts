@@ -1,10 +1,9 @@
-import { number, z } from "zod";
+import z from "zod";
 import { EventObject } from "../EventManager";
 import { playersTable } from "~/db/schema";
-import { getRandomCard, sendDrawCardEvent } from "./DrawCard";
 
 import { updatePlayers } from "../sendEvents";
-import { count, ne } from "drizzle-orm";
+import { count } from "drizzle-orm";
 
 const JoinEventSchema = z.object({
   type: z.literal("Join"),

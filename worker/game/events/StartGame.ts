@@ -23,7 +23,7 @@ export const StartGameEvent: EventObject<typeof StartGameEventSchema> = {
       .from(playersTable)
       .where(ne(playersTable.id, CardStackID))
       .all();
-
+    console.log(players);
     players.forEach((player) => {
       Array.from({ length: 7 }).forEach(() => {
         sendDrawCardEvent(player.id, GameRoom);
