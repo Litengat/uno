@@ -41,14 +41,15 @@ export class GameRoom extends DurableObject {
     ctx.blockConcurrencyWhile(async () => {
       await this._migrate();
     });
-
-    this.db
-      .insert(gameTable)
-      .values({
-        id: GameID,
-      })
-      .onConflictDoNothing()
-      .run();
+    ctx.blockConcurrencyWhile(async () => {
+      await this.db
+        .insert(gameTable)
+        .values({
+          id: GameID,
+        })
+        .onConflictDoNothing()
+        .run();
+    });
   }
 
   async _migrate() {
