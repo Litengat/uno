@@ -5,14 +5,13 @@ import React, {
   useRef,
   ReactNode,
 } from "react";
-import { safeJsonParse } from "@/lib/utils";
-import { EventMap } from "@/events/sendEvents";
-import { eventManager } from "@/events/events";
+import { useRPC } from "@/game/useRPC";
+
 type WebSocketContextType = {
-  sendEvent: <K extends keyof EventMap>(
-    eventName: K,
-    payload: EventMap[K]
-  ) => void;
+  call: <T>(
+    procedure: string,
+    input: any
+  ) => Promise<{ output?: T; error?: string }>;
 };
 
 const WebSocketContext = createContext<WebSocketContextType | undefined>(
@@ -37,6 +36,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
   children,
 }) => {
   const socketRef = useRef<WebSocket | null>(null);
+  const { call } = useRPC(socketRef.current);
 
   useEffect(() => {
     socketRef.current = new WebSocket(url);
@@ -45,44 +45,17 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
       console.log("WebSocket connected");
     };
 
-    (socketRef.current.onmessage = (event) => {
-      const parsed = safeJsonParse(event.data);
-      if (parsed.isErr()) {
-        console.error("Error parsing event", parsed.error);
-        return;
-      }
-      const result = eventManager.run(parsed.value);
-
-      if (result.isErr()) {
-        console.error("Error running event", result.error);
-      }
-    }),
-      (socketRef.current.onclose = () => {
-        console.log("WebSocket disconnected");
-      });
+    socketRef.current.onclose = () => {
+      console.log("WebSocket disconnected");
+    };
 
     return () => {
       socketRef.current?.close();
     };
   }, [url]);
 
-  const sendEvent = <K extends keyof EventMap>(
-    eventName: K,
-    payload: EventMap[K]
-  ) => {
-    const event = {
-      type: eventName,
-      ...payload,
-    };
-    if (socketRef.current?.readyState === WebSocket.OPEN) {
-      socketRef.current.send(JSON.stringify(event));
-    } else {
-      console.warn("WebSocket not open");
-    }
-  };
-
   return (
-    <WebSocketContext.Provider value={{ sendEvent }}>
+    <WebSocketContext.Provider value={{ call }}>
       {children}
     </WebSocketContext.Provider>
   );

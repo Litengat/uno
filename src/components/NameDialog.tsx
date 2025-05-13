@@ -35,7 +35,7 @@ export function NameDialog({
   setOpen: (open: boolean) => void;
 }) {
   // 1. Define your form.
-  const { sendEvent } = useWebSocket();
+  const { call } = useWebSocket();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -44,12 +44,13 @@ export function NameDialog({
   });
 
   // 2. Define a submit handler.
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: z.infer<typeof formSchema>) {
     // Do something with the form values.
     // ✅ This will be type-safe and validated.
-    sendEvent("Join", {
+    await call("Join", {
       name: values.username,
     });
+
     setOpen(false);
     localStorage.setItem(DefautName, values.username);
 

@@ -1,30 +1,32 @@
 import z from "zod";
-
 import { err, ok } from "neverthrow";
+import { GameRoom } from "@/GameRoom";
 
-type EventObject<T extends z.AnyZodObject> = {
+export type EventObject<T extends z.AnyZodObject> = {
   type: string;
   schema: T;
-  func: (event: z.infer<T>) => void;
+  func: (event: z.infer<T>, gameRoom: GameRoom) => void;
 };
 
-export type event = {
+export type Event = {
   type: string;
-  playerid: string;
+  playerId: string;
   [key: string]: any;
 };
 
-export class Eventmanager {
+export class EventManager {
   private events: Map<string, EventObject<z.AnyZodObject>> = new Map();
+  private gameRoom: GameRoom;
 
-  public register<T extends z.AnyZodObject>(event: EventObject<T>) {
-    this.events.set(
-      event.type,
-      event as unknown as EventObject<z.AnyZodObject>
-    );
+  constructor(gameRoom: GameRoom) {
+    this.gameRoom = gameRoom;
   }
 
-  public run(event: event) {
+  public register<T extends z.AnyZodObject>(event: EventObject<T>) {
+    this.events.set(event.type, event as unknown as EventObject<z.AnyZodObject>);
+  }
+
+  public run(event: Event) {
     const object = this.events.get(event.type);
 
     if (!object) {
@@ -37,7 +39,8 @@ export class Eventmanager {
       console.error("Event data is invalid", parsed.error);
       return err(`Event ${event.type} data is invalid`);
     }
-    object.func(parsed.data);
+    
+    object.func(parsed.data, this.gameRoom);
     return ok();
   }
 }
