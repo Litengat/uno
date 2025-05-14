@@ -89,6 +89,7 @@ export function LayedCardstack() {
         <CardItem card={lastCard} index={index} />
       ))}
       {isOver &&
+        yourId === currenPlayer &&
         activeCard &&
         canBeLaidOnTop(visableCards[visableCards.length - 1], activeCard) && (
           <CardItem

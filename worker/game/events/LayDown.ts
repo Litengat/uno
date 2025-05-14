@@ -96,8 +96,8 @@ export const LayDownEvent: EventObject<typeof LayDownEventSchema> = {
   },
 };
 
-async function reverse(GameRoom: GameRoom) {
-  const game = await GameRoom.getGame();
+function reverse(GameRoom: GameRoom) {
+  const game = GameRoom.getGame();
   console.log("omg reverse");
   const flippedDirection = game?.direction === 1 ? -1 : 1;
   GameRoom.db.update(gameTable).set({ direction: flippedDirection }).all();
