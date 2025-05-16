@@ -16,6 +16,7 @@ import Drawcard from "./components/Drawcard";
 import OtherPlayer from "./components/OtherPlayer";
 import { useGameStore, usePlayerStore } from "./state";
 import { useState } from "react";
+import { WS } from "./ws/ws";
 
 export function Game() {
   const { id } = useParams();
@@ -26,6 +27,7 @@ export function Game() {
 
   const [openNameDialog, setOpenNameDialog] = useState(true);
 
+  const server = WS(url);
   // const { sendMessage, lastMessage, readyState } = useWebSocket(
   //   `ws://localhost:5173/websocket/${id}`,
   //   {
@@ -47,6 +49,15 @@ export function Game() {
           </div>
           <NameDialog open={openNameDialog} setOpen={setOpenNameDialog} />
           <StartButton />
+          <Button
+            onClick={async () => {
+              const users = await server.users.listUsers({});
+              console.log(users);
+            }}
+          >
+            {" "}
+            Start
+          </Button>
           {/* <div className=" absolute w-screen h-screen"> */}
           <div className="flex justify-center items-center">
             <div className="flex gap-30">
@@ -66,9 +77,9 @@ function StartButton() {
   const websocket = useWebSocket();
   return (
     <Button
-      onClick={() => {
-        websocket.sendEvent("StartGame", {});
-      }}
+    // onClick={() => {
+    //   websocket.sendEvent("StartGame", {});
+    // }}
     >
       {" "}
       Start

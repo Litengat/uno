@@ -1,5 +1,5 @@
-import z from "zod";
-
+import { z } from "zod";
+import { createOS } from "../mrpc/mini-trpc";
 import { err, ok } from "neverthrow";
 import { GameRoom } from "@/GameRoom";
 
@@ -9,19 +9,10 @@ export type EventObject<T extends z.AnyZodObject> = {
   func: (event: z.infer<T>, GameRoom: GameRoom) => void;
 };
 
-export type event = {
-  type: string;
-  playerid: string;
-  [key: string]: any;
-};
+const os = createOS();
 
-export class Eventmanager {
+export class GameEventManager {
   private events: Map<string, EventObject<z.AnyZodObject>> = new Map();
-  private GameRoom: GameRoom;
-
-  constructor(GameRoom: GameRoom) {
-    this.GameRoom = GameRoom;
-  }
 
   public register<T extends z.AnyZodObject>(event: EventObject<T>) {
     this.events.set(
@@ -30,7 +21,7 @@ export class Eventmanager {
     );
   }
 
-  public run(event: event) {
+  public run(event: z.infer<typeof gameEventSchema>, gameRoom: GameRoom) {
     const object = this.events.get(event.type);
 
     if (!object) {
@@ -43,7 +34,16 @@ export class Eventmanager {
       console.error("Event data is invalid", parsed.error);
       return err(`Event ${event.type} data is invalid`);
     }
-    object.func(parsed.data, this.GameRoom);
+    object.func(parsed.data, gameRoom);
     return ok();
   }
 }
+
+// Define the base game event schema
+export const gameEventSchema = z.object({
+  type: z.string(),
+  playerid: z.string(),
+  data: z.record(z.any()),
+});
+
+// Create a new router for game events

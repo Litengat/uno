@@ -1,8 +1,10 @@
-import z from "zod";
-
+import { z } from "zod";
+import { createOS } from "../../worker/mrpc/mini-trpc";
 import { err, ok } from "neverthrow";
 
-type EventObject<T extends z.AnyZodObject> = {
+const os = createOS();
+
+export type EventObject<T extends z.AnyZodObject> = {
   type: string;
   schema: T;
   func: (event: z.infer<T>) => void;
@@ -41,3 +43,22 @@ export class Eventmanager {
     return ok();
   }
 }
+
+// Create a new router for events
+export const eventRouter = {
+  events: {
+    emit: os
+      .input(
+        z.object({
+          type: z.string(),
+          playerid: z.string(),
+          data: z.record(z.any()),
+        })
+      )
+      .handler(async ({ input }) => {
+        const eventManager = new Eventmanager();
+        const result = eventManager.run(input);
+        return result;
+      }),
+  },
+};

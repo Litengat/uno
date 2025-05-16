@@ -1,9 +1,7 @@
 import { DurableObject } from "cloudflare:workers";
 import { Env } from ".";
-import { events } from "./game/events";
 import { Attachment } from "./types";
 import { safeJsonParse, sendError } from "./utills";
-import { Eventmanager } from "~/game/EventManager";
 import {
   drizzle,
   type DrizzleSqliteDODatabase,
@@ -11,24 +9,35 @@ import {
 import { migrate } from "drizzle-orm/durable-sqlite/migrator";
 
 import migrations from "../drizzle/migrations.js";
-import { EventMap } from "./game/sendEvents.js";
 import { gameTable, playersTable } from "./db/schema.js";
 import { eq } from "drizzle-orm";
+import { WSServer } from "./mrpc/ws.server.js";
+import { serverRouter } from "./route.js";
+import { clientRouter } from "../src/ws/routes.js";
+import { inferClientType } from "./mrpc/mini-trpc";
 
 export const CardStackID = "cardStack";
-
 export const GameID = 0;
+
+type GameEventPayload = {
+  updatePlayers: { players: any[] };
+  cardDrawn: { card: any };
+  cardLaidDown: { playerId: string; card: any };
+  updateCardCount: { playerId: string; numberOfCards: number };
+  yourId: { playerId: string };
+  gameStarted: Record<string, never>;
+  nextTurn: { playerId: string };
+};
+
+type GameClientType = inferClientType<typeof clientRouter>;
 
 export class GameRoom extends DurableObject {
   sessions: Map<string, WebSocket> = new Map();
-
-  eventManager = new Eventmanager(this);
+  mrpcServer: WSServer<typeof clientRouter>;
   db: DrizzleSqliteDODatabase;
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
-    // create all events
-    events(this.eventManager);
     this.db = drizzle(ctx.storage);
     this.sessions = new Map();
     ctx.getWebSockets().forEach((ws) => {
@@ -50,38 +59,46 @@ export class GameRoom extends DurableObject {
         .onConflictDoNothing()
         .run();
     });
+
+    this.mrpcServer = new WSServer<typeof clientRouter>(
+      serverRouter,
+      clientRouter,
+      {
+        onClientConnect: (clientId) =>
+          console.log(`Client connected: ${clientId}`),
+        onClientDisconnect: (clientId) =>
+          console.log(`Client disconnected: ${clientId}`),
+        onNotification: (notification, clientId) => {
+          console.log(`Notification from client ${clientId}:`, notification);
+        },
+        mrpc: (clientID) => {
+          return this.mrpcServer.createTypedClientCaller(clientID);
+        },
+      }
+    );
   }
 
   async _migrate() {
     migrate(this.db, migrations);
   }
 
-  async fetch(_request: Request): Promise<Response> {
-    // Creates two ends of a WebSocket connection.
+  async fetch(request: Request): Promise<Response> {
     const webSocketPair = new WebSocketPair();
     const [client, server] = Object.values(webSocketPair);
-
-    /* Calling `acceptWebSocket()` informs the runtime that this WebSocket is to begin terminating
-     * request within the Durable Object. It has the effect of "accepting" the connection,
-     * and allowing the WebSocket to send and receive messages.
-     * Unlike `ws.accept()`, `state.acceptWebSocket(ws)` informs the Workers Runtime that the WebSocket
-     * is "hibernatable", so the runtime does not need to pin this Durable Object to memory while
-     * the connection is open. During periods of inactivity, the Durable Object can be evicted
-     * from memory, but the WebSocket connection will remain open. If at some later point the
-     * WebSocket receives a message, the runtime will recreate the Durable Object
-     * (run the `constructor`) and deliver the message to the appropriate handler.
-     */
 
     this.ctx.acceptWebSocket(server);
 
     const id = crypto.randomUUID();
-    // The `serializeAttachment()` method is used to attach metadata to the WebSocket connection.
+    const clientId =
+      request.headers.get("sec-websocket-key") || `client-${Date.now()}`;
+
     server.serializeAttachment({
       id: id,
       name: undefined,
+      clientId: clientId,
     } as Attachment);
 
-    // adding the player to the players map
+    this.mrpcServer.registerClient(clientId, (message) => server.send(message));
     this.sessions.set(id, server);
 
     return new Response(null, {
@@ -91,10 +108,12 @@ export class GameRoom extends DurableObject {
   }
 
   async webSocketMessage(ws: WebSocket, message: ArrayBuffer | string) {
-    // Upon receiving a message from the client, the server replies with the same message,
-    // and the total number of connections with the "[Durable Object]: " prefix
-    // and the number of connections.
-    const meta = ws.deserializeAttachment() as Attachment | undefined;
+    const meta = ws.deserializeAttachment() as Attachment;
+    await this.mrpcServer.handleClientMessage(
+      meta.clientId,
+      message.toString()
+    );
+
     if (!meta) {
       sendError(ws, "Invalid attachment");
       return;
@@ -108,34 +127,64 @@ export class GameRoom extends DurableObject {
       sendError(ws, parsedMessage.error);
       return;
     }
-    const err = this.eventManager.run({
+
+    // Handle game events through tRPC
+    const event = {
       playerid: meta.id,
       ...parsedMessage.value,
-    });
+    };
+
+    const mrpc = this.mrpcServer.createTypedClientCaller(
+      meta.clientId
+    ) as GameClientType;
+    switch (event.type) {
+      case "Join":
+        await mrpc.game.join({ playerid: event.playerid, name: event.name });
+        break;
+      case "StartGame":
+        await mrpc.game.startGame({ playerid: event.playerid });
+        break;
+      case "DrawCard":
+        await mrpc.game.drawCard({ playerid: event.playerid });
+        break;
+      case "LayDown":
+        await mrpc.game.layDown({
+          playerid: event.playerid,
+          cardId: event.cardId,
+          wildColor: event.wildColor,
+        });
+        break;
+      case "leave":
+        await mrpc.game.leave({ playerid: event.playerid });
+        break;
+    }
   }
 
   async webSocketOpen(ws: WebSocket) {
-    // If the client opens the connection, the runtime will invoke the webSocketOpen() handler.
     const meta = ws.deserializeAttachment() as Attachment | undefined;
     if (!meta) {
       sendError(ws, "Invalid attachment");
       return;
     }
+    this.mrpcServer.registerClient(meta.clientId, (message) =>
+      ws.send(message)
+    );
     this.sessions.set(meta.id, ws);
   }
+
   async webSocketClose(
     ws: WebSocket,
     code: number,
     _reason: string,
     _wasClean: boolean
   ) {
-    // If the client closes the connection, the runtime will invoke the webSocketClose() handler.
     ws.close(code, "Durable Object is closing WebSocket");
     const meta = ws.deserializeAttachment() as Attachment | undefined;
     if (!meta) {
       sendError(ws, "Invalid attachment");
       return;
     }
+    this.mrpcServer.removeClient(meta.clientId);
     this.sessions.delete(meta.id);
     this.db.delete(playersTable).where(eq(playersTable.id, meta.id)).run();
   }
@@ -148,24 +197,22 @@ export class GameRoom extends DurableObject {
     });
   }
 
-  sendEvent<K extends keyof EventMap>(eventName: K, payload: EventMap[K]) {
-    const event = {
-      type: eventName,
-      ...payload,
-    };
-    this.broadcast(JSON.stringify(event));
+  // Helper method to send events through tRPC
+  async sendEvent<K extends keyof GameEventPayload>(
+    eventName: K,
+    payload: GameEventPayload[K]
+  ) {
+    const message = JSON.stringify({ type: eventName, ...payload });
+    this.broadcast(message);
   }
 
-  sendPlayerEvent<K extends keyof EventMap>(
+  async sendPlayerEvent<K extends keyof GameEventPayload>(
     playerId: string,
     eventName: K,
-    payload: EventMap[K]
+    payload: GameEventPayload[K]
   ) {
-    const event = {
-      type: eventName,
-      ...payload,
-    };
-    this.sessions.get(playerId)?.send(JSON.stringify(event));
+    const message = JSON.stringify({ type: eventName, ...payload });
+    this.sessions.get(playerId)?.send(message);
   }
 
   createCardStack() {
@@ -175,6 +222,7 @@ export class GameRoom extends DurableObject {
       position: -1,
     });
   }
+
   getGame() {
     const game = this.db
       .select()
@@ -187,5 +235,11 @@ export class GameRoom extends DurableObject {
     }
 
     return game;
+  }
+
+  mrpc(clientId: string) {
+    return this.mrpcServer.createTypedClientCaller<typeof clientRouter>(
+      clientId
+    );
   }
 }

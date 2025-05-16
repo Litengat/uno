@@ -5,15 +5,13 @@ import React, {
   useRef,
   ReactNode,
 } from "react";
-import { safeJsonParse } from "@/lib/utils";
-import { EventMap } from "@/events/sendEvents";
-import { eventManager } from "@/events/events";
-type WebSocketContextType = {
-  sendEvent: <K extends keyof EventMap>(
-    eventName: K,
-    payload: EventMap[K]
-  ) => void;
-};
+
+import { WSClient } from "@/ws/ws.client";
+import { clientRouter } from "@/ws/routes";
+import { serverRouter } from "../../worker/route";
+import { inferClientType } from "worker/mrpc/mini-trpc";
+
+type WebSocketContextType = inferClientType<typeof serverRouter>;
 
 const WebSocketContext = createContext<WebSocketContextType | undefined>(
   undefined
@@ -36,53 +34,33 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
   url,
   children,
 }) => {
-  const socketRef = useRef<WebSocket | null>(null);
+  const socketRef = useRef<WSClient | null>(null);
+  const mrpc = useRef<inferClientType<typeof serverRouter> | null>(null);
 
   useEffect(() => {
-    socketRef.current = new WebSocket(url);
+    socketRef.current = new WSClient(clientRouter, {
+      url: url,
+      reconnect: true,
+      onOpen: () => console.log("Connected to server"),
+      onClose: () => console.log("Disconnected from server"),
+      onError: (error) => console.error("WebSocket error:", error),
+      onNotification: (notification) => {
+        console.log(
+          `Server notification: ${notification.event}`,
+          notification.payload
+        );
+      },
+    });
 
-    socketRef.current.onopen = () => {
-      console.log("WebSocket connected");
-    };
+    // Connect to the server
+    socketRef.current.connect();
 
-    (socketRef.current.onmessage = (event) => {
-      const parsed = safeJsonParse(event.data);
-      if (parsed.isErr()) {
-        console.error("Error parsing event", parsed.error);
-        return;
-      }
-      const result = eventManager.run(parsed.value);
-
-      if (result.isErr()) {
-        console.error("Error running event", result.error);
-      }
-    }),
-      (socketRef.current.onclose = () => {
-        console.log("WebSocket disconnected");
-      });
-
-    return () => {
-      socketRef.current?.close();
-    };
+    // Create a typed client for calling server procedures
+    mrpc.current = socketRef.current.createTypedServerCaller(serverRouter);
   }, [url]);
 
-  const sendEvent = <K extends keyof EventMap>(
-    eventName: K,
-    payload: EventMap[K]
-  ) => {
-    const event = {
-      type: eventName,
-      ...payload,
-    };
-    if (socketRef.current?.readyState === WebSocket.OPEN) {
-      socketRef.current.send(JSON.stringify(event));
-    } else {
-      console.warn("WebSocket not open");
-    }
-  };
-
   return (
-    <WebSocketContext.Provider value={{ sendEvent }}>
+    <WebSocketContext.Provider value={mrpc.current ?? undefined}>
       {children}
     </WebSocketContext.Provider>
   );

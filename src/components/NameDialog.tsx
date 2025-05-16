@@ -7,7 +7,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 
 import {
@@ -35,7 +34,7 @@ export function NameDialog({
   setOpen: (open: boolean) => void;
 }) {
   // 1. Define your form.
-  const { sendEvent } = useWebSocket();
+  const mrpc = useWebSocket();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -47,9 +46,7 @@ export function NameDialog({
   function onSubmit(values: z.infer<typeof formSchema>) {
     // Do something with the form values.
     // ✅ This will be type-safe and validated.
-    sendEvent("Join", {
-      name: values.username,
-    });
+
     setOpen(false);
     localStorage.setItem(DefautName, values.username);
 

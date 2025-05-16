@@ -25,7 +25,7 @@ export function LayedCardstack() {
   const addLastCard = useCardStackStore((state) => state.addCardStackCard);
   const yourId = useGameStore((state) => state.yourId);
   const currenPlayer = useGameStore((state) => state.currentPlayer);
-  const { sendEvent } = useWebSocket();
+  const mrpc = useWebSocket();
   const { activeCard } = useAktiveCard();
 
   const [open, setOpen] = useState(false);
@@ -55,9 +55,9 @@ export function LayedCardstack() {
 
         removeCard(String(active?.id));
         addLastCard(activeCard);
-        sendEvent("LayDown", {
-          cardId: activeCard.id,
-        });
+        // sendEvent("LayDown", {
+        //   cardId: activeCard.id,
+        // });
         return;
       }
     },
@@ -69,10 +69,10 @@ export function LayedCardstack() {
     console.log("Active card:", dialogCard);
     const card = { ...dialogCard, color: color };
     addLastCard(card);
-    sendEvent("LayDown", {
-      cardId: card.id,
-      wildColor: color,
-    });
+    // sendEvent("LayDown", {
+    //   cardId: card.id,
+    //   wildColor: color,
+    // });
   };
 
   return (
