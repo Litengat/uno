@@ -1,6 +1,6 @@
-import { cardsTable } from "../../db/schema";
+import { cardsTable } from "~/db/schema";
 import { count, eq } from "drizzle-orm";
-import { getRandomCard } from "../utils/cards";
+import { getRandomCard } from "~/utils/cards";
 
 export async function handleDrawCard({ input, createMprc }: any) {
   const mrpc = createMprc();

@@ -1,5 +1,3 @@
-import { CardColorSchema } from "../../types";
-
 export function getRandomCard() {
   const colors = ["red", "blue", "green", "yellow"] as const;
   const types = [

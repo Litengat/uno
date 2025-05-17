@@ -1,9 +1,21 @@
-import { cardsTable, gameTable } from "../../db/schema";
-import { eq } from "drizzle-orm";
-import { CardStackID } from "../../GameRoom";
-import { CardColorSchema } from "../../types";
-import { getNextPlayerIndex, getPlayerbyPositon } from "../players";
-import { getRandomCard } from "../utils/cards";
+import { cardsTable, gameTable } from "~/db/schema";
+import { eq, and } from "drizzle-orm";
+import { CardStackID } from "~/consts";
+
+import { getNextPlayerIndex, getPlayerbyPositon } from "~/game/players";
+import { os } from "~/mrpc/ws.server";
+import { z } from "zod";
+import { CardColorSchema } from "~/types";
+
+export const layDown = os
+  .input(
+    z.object({
+      playerid: z.string(),
+      cardId: z.string(),
+      wildColor: CardColorSchema.optional(),
+    })
+  )
+  .handler(handleLayDown);
 
 export async function handleLayDown({ input, createMprc }: any) {
   const mrpc = createMprc();
@@ -15,10 +27,11 @@ export async function handleLayDown({ input, createMprc }: any) {
     .select()
     .from(cardsTable)
     .where(
-      eq(cardsTable.id, input.cardId) && eq(cardsTable.holder, input.playerid)
-    )
-    .get();
-
+      and(
+        eq(cardsTable.id, input.cardId),
+        eq(cardsTable.holder, input.playerid)
+      )
+    );
   if (!card) {
     throw new Error("Card not found in player's hand");
   }

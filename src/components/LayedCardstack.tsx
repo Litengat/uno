@@ -26,6 +26,7 @@ export function LayedCardstack() {
   const yourId = useGameStore((state) => state.yourId);
   const currenPlayer = useGameStore((state) => state.currentPlayer);
   const mrpc = useWebSocket();
+
   const { activeCard } = useAktiveCard();
 
   const [open, setOpen] = useState(false);

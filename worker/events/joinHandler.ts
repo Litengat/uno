@@ -1,9 +1,12 @@
-import { playersTable } from "../../db/schema";
-import { count } from "drizzle-orm";
-import z from "zod";
-import { os } from "~/route";
+import { z } from "zod";
 
-export const join = os
+// Import event handlers
+
+import { os } from "~/mrpc/ws.server";
+import { playersTable } from "~/db/schema";
+import { count } from "drizzle-orm";
+
+const joinHandler = os
   .input(z.object({ name: z.string() }))
   .handler(async ({ input, clientID, createMprc, db }) => {
     const mrpc = createMprc();
@@ -39,3 +42,5 @@ export const join = os
 
     return { success: true };
   });
+
+export const join = joinHandler;

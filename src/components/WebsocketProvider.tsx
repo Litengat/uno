@@ -4,20 +4,19 @@ import React, {
   useEffect,
   useRef,
   ReactNode,
+  useState,
 } from "react";
 
 import { WSClient } from "@/ws/ws.client";
 import { clientRouter } from "@/ws/routes";
 import { serverRouter } from "../../worker/route";
-import { inferClientType } from "worker/mrpc/mini-trpc";
+import { createMRPCClient, inferClientType } from "../../worker/mrpc/mini-trpc";
 
 type WebSocketContextType = inferClientType<typeof serverRouter>;
 
-const WebSocketContext = createContext<WebSocketContextType | undefined>(
-  undefined
-);
+const WebSocketContext = createContext<WebSocketContextType | null>(null);
 
-export const useWebSocket = (): WebSocketContextType => {
+export const useWebSocket = () => {
   const context = useContext(WebSocketContext);
   if (!context) {
     throw new Error("useWebSocket must be used within a WebSocketProvider");
@@ -35,13 +34,29 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
   children,
 }) => {
   const socketRef = useRef<WSClient | null>(null);
-  const mrpc = useRef<inferClientType<typeof serverRouter> | null>(null);
+  const [mrpc, setMrpc] = useState<WebSocketContextType | null>(null);
 
   useEffect(() => {
+    if (!url) return;
+
+    console.log("Initializing WebSocket connection...");
     socketRef.current = new WSClient(clientRouter, {
       url: url,
       reconnect: true,
-      onOpen: () => console.log("Connected to server"),
+      onOpen: () => {
+        console.log("Connected to server");
+        // Create the MRPC client after connection is established
+        const client = createMRPCClient<typeof serverRouter>(
+          serverRouter,
+          <TInput, TOutput>(path: string[], input: TInput) => {
+            if (!socketRef.current) {
+              throw new Error("WebSocket client not initialized");
+            }
+            return socketRef.current.callServer(path, input);
+          }
+        );
+        setMrpc(client);
+      },
       onClose: () => console.log("Disconnected from server"),
       onError: (error) => console.error("WebSocket error:", error),
       onNotification: (notification) => {
@@ -55,12 +70,18 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     // Connect to the server
     socketRef.current.connect();
 
-    // Create a typed client for calling server procedures
-    mrpc.current = socketRef.current.createTypedServerCaller(serverRouter);
+    return () => {
+      socketRef.current?.disconnect();
+      setMrpc(null);
+    };
   }, [url]);
 
+  if (!mrpc) {
+    return null; // or a loading state
+  }
+
   return (
-    <WebSocketContext.Provider value={mrpc.current ?? undefined}>
+    <WebSocketContext.Provider value={mrpc}>
       {children}
     </WebSocketContext.Provider>
   );

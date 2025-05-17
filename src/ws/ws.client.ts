@@ -1,6 +1,5 @@
 import {
   createMRPCClient,
-  inferClientType,
   Router,
   deserializeAndExecute,
 } from "../../worker/mrpc/mini-trpc";
@@ -21,7 +20,7 @@ export type ClientContext = {};
 /**
  * Options for WebSocket client
  */
-export interface WSClientOptions<ClientRouter extends Router> {
+export interface WSClientOptions {
   url: string;
   reconnect?: boolean;
   maxRetries?: number;
@@ -46,11 +45,6 @@ export interface WSClientOptions<ClientRouter extends Router> {
    * Called when a notification is received from the server
    */
   onNotification?: (notification: WSNotificationMessage) => void;
-
-  /**
-   * Called when a MRPC client is created
-   */
-  mrpc?: () => inferClientType<ClientRouter>;
 }
 
 const defaultRetryDelay = (retryCount: number) =>
@@ -60,15 +54,15 @@ const defaultRetryDelay = (retryCount: number) =>
  * Client implementation for bidirectional RPC over WebSockets
  */
 
-export class WSClient<ClientRouter extends Router> extends WSHandler {
+export class WSClient extends WSHandler {
   private socket: WebSocket | null = null;
   private isConnected = false;
   private retryCount = 0;
-  private options: WSClientOptions<ClientRouter>;
+  private options: WSClientOptions;
   private explicitClose = false;
   private reconnectTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
-  constructor(clientRouter: Router, options: WSClientOptions<ClientRouter>) {
+  constructor(clientRouter: Router, options: WSClientOptions) {
     super(clientRouter); // This is the router for procedures the server can call on this client
     this.options = {
       reconnect: true,
@@ -143,7 +137,6 @@ export class WSClient<ClientRouter extends Router> extends WSHandler {
       if (this.options.onError) this.options.onError(event);
       // Note: 'onclose' will usually be called after 'onerror' when a connection fails.
     };
-
     this.socket.onmessage = async (event) => {
       try {
         const rawData = event.data;
@@ -225,46 +218,7 @@ export class WSClient<ClientRouter extends Router> extends WSHandler {
       this.socket.readyState !== WebSocket.OPEN
     ) {
       // Wait for connection if not connected and reconnect is enabled
-      if (
-        this.options.reconnect &&
-        (!this.socket || this.socket.readyState !== WebSocket.OPEN)
-      ) {
-        console.log(
-          "WebSocket not connected. Waiting for connection to call server..."
-        );
-        await new Promise<void>((resolve, reject) => {
-          const checkConnection = () => {
-            if (
-              this.isConnected &&
-              this.socket &&
-              this.socket.readyState === WebSocket.OPEN
-            ) {
-              if (this.options.onOpen)
-                this.socket.removeEventListener("open", tempOnOpen);
-              resolve();
-            } else if (
-              this.explicitClose ||
-              this.retryCount >= (this.options.maxRetries ?? Infinity)
-            ) {
-              if (this.options.onOpen)
-                this.socket?.removeEventListener("open", tempOnOpen);
-              reject(
-                new Error(
-                  "WebSocket permanently closed or max retries reached."
-                )
-              );
-            }
-          };
-          const tempOnOpen = () => checkConnection();
-
-          if (this.socket) {
-            this.socket.addEventListener("open", tempOnOpen);
-          }
-          checkConnection(); // Initial check
-        });
-      } else {
-        throw new Error("WebSocket not connected.");
-      }
+      await this.reconnect();
     }
 
     return this.makeCall<TInput, TOutput>(
@@ -274,6 +228,46 @@ export class WSClient<ClientRouter extends Router> extends WSHandler {
       "client-to-server",
       timeout
     );
+  }
+
+  async reconnect() {
+    // Wait for connection if not connected and reconnect is enabled
+    if (
+      this.options.reconnect &&
+      (!this.socket || this.socket.readyState !== WebSocket.OPEN)
+    ) {
+      console.log(
+        "WebSocket not connected. Waiting for connection to call server..."
+      );
+      await new Promise<void>((resolve, reject) => {
+        const checkConnection = () => {
+          if (
+            this.isConnected &&
+            this.socket &&
+            this.socket.readyState === WebSocket.OPEN
+          ) {
+            this.socket.removeEventListener("open", tempOnOpen);
+            resolve();
+          } else if (
+            this.explicitClose ||
+            this.retryCount >= (this.options.maxRetries ?? Infinity)
+          ) {
+            this.socket?.removeEventListener("open", tempOnOpen);
+            reject(
+              new Error("WebSocket permanently closed or max retries reached.")
+            );
+          }
+        };
+        const tempOnOpen = () => checkConnection();
+
+        if (this.socket) {
+          this.socket.addEventListener("open", tempOnOpen);
+        } else {
+          throw new Error("WebSocket not connected.");
+        }
+        checkConnection(); // Initial check
+      });
+    }
   }
 
   /**
@@ -326,9 +320,7 @@ export class WSClient<ClientRouter extends Router> extends WSHandler {
           const result = await deserializeAndExecute(
             this.router,
             requestMessage.serializedCall,
-            {
-              createMprc: () => this.options.mrpc?.(),
-            } as ClientContext
+            {}
           );
 
           // Return successful response

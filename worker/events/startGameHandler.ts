@@ -1,5 +1,5 @@
-import { playersTable, cardsTable } from "../../db/schema";
-import { CardStackID } from "../../GameRoom";
+import { playersTable, cardsTable } from "~/db/schema";
+import { CardStackID } from "~/consts";
 import { eq, count } from "drizzle-orm";
 import { getRandomCard } from "../utils/cards";
 

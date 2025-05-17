@@ -34,7 +34,7 @@ export function NameDialog({
   open: boolean;
   setOpen: (open: boolean) => void;
 }) {
-  const websocket = useWebSocket();
+  const mrcp = useWebSocket();
   const yourId = useGameStore((state) => state.yourId);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -45,12 +45,10 @@ export function NameDialog({
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!websocket || !yourId) return;
+    console.log("lol");
+    if (!mrcp) return;
 
-    await websocket.game.join({
-      playerid: yourId,
-      name: values.username,
-    });
+    mrcp.game.join({ name: values.username });
 
     setOpen(false);
     localStorage.setItem(DefautName, values.username);

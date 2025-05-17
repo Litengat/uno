@@ -1,22 +1,26 @@
 import { z } from "zod";
-import { createOS } from "./mrpc/mini-trpc";
-import { clientRouter } from "../src/ws/routes";
 import { CardColorSchema } from "./types";
-import { DrizzleSqliteDODatabase } from "drizzle-orm/durable-sqlite";
+
 // Import event handlers
-import { join } from "./game/events/joinHandler";
-import { handleStartGame } from "./game/events/startGameHandler";
-import { handleDrawCard } from "./game/events/drawCardHandler";
-import { handleLayDown } from "./game/events/layDownHandler";
-import { handleLeave } from "./game/events/leaveHandler";
-import { ServerContext } from "./mrpc/ws.server";
+import { join } from "./events/joinHandler";
+import { handleStartGame } from "./events/startGameHandler";
+import { handleDrawCard } from "./events/drawCardHandler";
+import { handleLayDown, layDown } from "./events/layDownHandler";
+import { handleLeave } from "./events/leaveHandler";
+import { os } from "./mrpc/ws.server";
+import { playersTable } from "./db/schema";
+import { count } from "drizzle-orm";
 
-type client = {
-  clientID: string;
-  db: DrizzleSqliteDODatabase;
-};
-
-export const os = createOS<ServerContext>();
+const listUsers = os
+  .input(z.object({ limit: z.number().optional() }))
+  .handler(async ({ input, createMprc }) => {
+    const mrpc = createMprc();
+    mrpc.notifications.showMessage({ message: "Martin", title: "Martin" });
+    return Array.from({ length: input.limit || 10 }, (_, i) => ({
+      id: i + 1,
+      name: `User ${i + 1}`,
+    }));
+  });
 
 export const serverRouter = {
   users: {
@@ -26,27 +30,16 @@ export const serverRouter = {
         return { id: input.id, name: "User " + input.id };
       }),
 
-    listUsers: os
-      .input(z.object({ limit: z.number().optional() }))
-      .handler(async ({ input, createMprc }) => {
-        const mrpc = createMprc();
-        mrpc.notifications.showMessage({ message: "Martin", title: "Martin" });
-        return Array.from({ length: input.limit || 10 }, (_, i) => ({
-          id: i + 1,
-          name: `User ${i + 1}`,
-        }));
-      }),
+    listUsers: listUsers,
   },
 
   game: {
-    join: join,
-    startGame: os
-      .input(
-        z.object({
-          playerid: z.string(),
-        })
-      )
-      .handler(handleStartGame),
+    join,
+    layDown,
+    startGame: os.input(z.object({})).handler(async ({}) => {
+      console.log("GameStart");
+      return { success: true };
+    }),
 
     drawCard: os
       .input(
@@ -56,15 +49,15 @@ export const serverRouter = {
       )
       .handler(handleDrawCard),
 
-    layDown: os
-      .input(
-        z.object({
-          playerid: z.string(),
-          cardId: z.string(),
-          wildColor: CardColorSchema.optional(),
-        })
-      )
-      .handler(handleLayDown),
+    // layDown: os
+    //   .input(
+    //     z.object({
+    //       playerid: z.string(),
+    //       cardId: z.string(),
+    //       wildColor: CardColorSchema.optional(),
+    //     })
+    //   )
+    //   .handler(handleLayDown),
 
     leave: os
       .input(

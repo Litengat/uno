@@ -16,8 +16,7 @@ import { serverRouter } from "./route.js";
 import { clientRouter } from "../src/ws/routes.js";
 import { inferClientType } from "./mrpc/mini-trpc";
 
-export const CardStackID = "cardStack";
-export const GameID = 0;
+import { CardStackID, GameID } from "./consts.js";
 
 type GameEventPayload = {
   updatePlayers: { players: any[] };

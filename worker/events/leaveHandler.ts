@@ -1,6 +1,6 @@
-import { playersTable, cardsTable } from "../../db/schema";
+import { playersTable, cardsTable } from "~/db/schema";
 import { eq, count } from "drizzle-orm";
-import { CardStackID } from "../../GameRoom";
+import { CardStackID } from "~/consts";
 
 export async function handleLeave({ input, createMprc }: any) {
   const mrpc = createMprc();

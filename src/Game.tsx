@@ -23,20 +23,10 @@ export function Game() {
   if (!id) {
     throw new Error("No game ID provided");
   } // Ensure id is a string
+
   const url = import.meta.env.VITE_WEBSOCKET_URL + id;
 
   const [openNameDialog, setOpenNameDialog] = useState(true);
-
-  const server = WS(url);
-  // const { sendMessage, lastMessage, readyState } = useWebSocket(
-  //   `ws://localhost:5173/websocket/${id}`,
-  //   {
-  //     onOpen: () => console.log("WebSocket connection opened"),
-  //     onClose: () => console.log("WebSocket connection closed"),
-  //     onError: (event) => console.error("WebSocket error:", event),
-  //     shouldReconnect: (closeEvent) => true,
-  //   }
-  // );
 
   return (
     <div>
@@ -49,16 +39,7 @@ export function Game() {
           </div>
           <NameDialog open={openNameDialog} setOpen={setOpenNameDialog} />
           <StartButton />
-          <Button
-            onClick={async () => {
-              const users = await server.users.listUsers({});
-              console.log(users);
-            }}
-          >
-            {" "}
-            Start
-          </Button>
-          {/* <div className=" absolute w-screen h-screen"> */}
+
           <div className="flex justify-center items-center">
             <div className="flex gap-30">
               <Drawcard />
@@ -74,14 +55,14 @@ export function Game() {
 }
 
 function StartButton() {
-  const websocket = useWebSocket();
+  const mrcp = useWebSocket();
   const yourId = useGameStore((state) => state.yourId);
 
   return (
     <Button
       onClick={async () => {
-        if (!websocket || !yourId) return;
-        await websocket.game.startGame({ playerid: yourId });
+        if (!mrcp || !yourId) return;
+        await mrcp.game.startGame({ playerid: yourId });
       }}
     >
       Start
@@ -101,7 +82,6 @@ function Otherplayers() {
   const yourId = useGameStore((store) => store.yourId);
   const otherplayers = players.filter((p) => p.id !== yourId).slice(0, 4);
 
-  console.log(players);
   return (
     <div className="absolute left-0 top-0 right-0 bottom-0 w-screen h-screen -z-1">
       {otherplayers.map((player, i) => (

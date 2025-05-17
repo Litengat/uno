@@ -1,4 +1,10 @@
-import { inferClientType, Router, deserializeAndExecute } from "./mini-trpc";
+import {
+  inferClientType,
+  Router,
+  deserializeAndExecute,
+  createOS,
+  createMRPCClient,
+} from "./mini-trpc";
 import {
   WSHandler,
   WSMessage,
@@ -7,7 +13,6 @@ import {
   WSResponseMessage,
   WSErrorMessage,
 } from "../../src/ws/ws.common";
-import { createMRPCClient } from "./mini-trpc";
 import { DrizzleSqliteDODatabase } from "drizzle-orm/durable-sqlite";
 import { clientRouter } from "../../src/ws/routes";
 
@@ -19,6 +24,10 @@ export type ServerContext = {
   createMprc: () => inferClientType<typeof clientRouter>;
   db?: DrizzleSqliteDODatabase;
 };
+/**
+ * Create os for Server route
+ */
+export const os = createOS<ServerContext>();
 
 export interface WSServerOptions<TRouter extends Router> {
   /**
@@ -103,7 +112,7 @@ export class WSServer<TRouter extends Router> extends WSHandler {
       console.error(`Received message from unknown client: ${clientId}`);
       return;
     }
-
+    ("lol fick dich");
     try {
       const message = JSON.parse(rawMessage) as WSMessage;
 

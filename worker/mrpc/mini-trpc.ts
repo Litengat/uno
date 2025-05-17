@@ -1,6 +1,4 @@
 import { z } from "zod";
-import { DrizzleSqliteDODatabase } from "drizzle-orm/durable-sqlite";
-import { text } from "drizzle-orm/gel-core";
 
 // === Type Definitions ===
 
@@ -12,7 +10,7 @@ export type Procedure<TInput, TOutput, TContext> = {
   _output: TOutput;
   _def: {
     input: z.ZodType<TInput>;
-    handler: (ctx: TContext & { input: TInput }) => Promise<TOutput>;
+    handler: (ctx: { input: TInput } & TContext) => Promise<TOutput>;
   };
 };
 
@@ -127,6 +125,7 @@ export async function deserializeAndExecute<TOutput, TContext>(
 
   const procedure = current as Procedure<unknown, TOutput, TContext>;
   // Validate the input using Zod
+
   try {
     const validatedInput = procedure._def.input.parse(input);
     // Execute the handler with properly validated input

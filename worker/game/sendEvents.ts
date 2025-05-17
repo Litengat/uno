@@ -14,19 +14,19 @@ export type EventMap = {
   NextTurn: { playerId: string };
 };
 
-export function updatePlayers(GameRoom: GameRoom) {
-  const players = GameRoom.db.select().from(playersTable).all();
-  GameRoom.sendEvent("UpdatePlayers", {
-    players: players.map((player) => {
-      const result = GameRoom.db
-        .select({ count: count() })
-        .from(cardsTable)
-        .where(eq(cardsTable.holder, player.id))
-        .get();
-      return {
-        ...player,
-        numberOfCards: result?.count ?? 0,
-      };
-    }),
-  });
-}
+// export function updatePlayers(GameRoom: GameRoom) {
+//   const players = GameRoom.db.select().from(playersTable).all();
+//   GameRoom.sendEvent("UpdatePlayers", {
+//     players: players.map((player) => {
+//       const result = GameRoom.db
+//         .select({ count: count() })
+//         .from(cardsTable)
+//         .where(eq(cardsTable.holder, player.id))
+//         .get();
+//       return {
+//         ...player,
+//         numberOfCards: result?.count ?? 0,
+//       };
+//     }),
+//   });
+// }
