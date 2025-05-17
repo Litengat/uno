@@ -1,1 +1,0 @@
-ALTER TABLE `players_table` DROP COLUMN `cards`;
