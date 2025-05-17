@@ -2,8 +2,21 @@ import {
   createMRPCClient,
   inferClientType,
   Router,
+  deserializeAndExecute,
 } from "../../worker/mrpc/mini-trpc";
-import { WSHandler, WSMessage, WSNotificationMessage } from "./ws.common";
+import {
+  WSHandler,
+  WSMessage,
+  WSNotificationMessage,
+  WSRequestMessage,
+  WSResponseMessage,
+  WSErrorMessage,
+} from "./ws.common";
+
+/**
+ * Client-specific context for procedure handlers
+ */
+export type ClientContext = {};
 
 /**
  * Options for WebSocket client
@@ -158,12 +171,7 @@ export class WSClient<ClientRouter extends Router> extends WSHandler {
         }
 
         // For all other messages, use the standard handler
-        const response = await this.handleMessage(rawData, () => {
-          if (!this.options.mrpc) {
-            return;
-          }
-          return this.options.mrpc();
-        });
+        const response = await this.handleMessage(rawData);
         if (response) {
           this.sendRaw(response);
         }
@@ -302,6 +310,91 @@ export class WSClient<ClientRouter extends Router> extends WSHandler {
    */
   public getSocket(): WebSocket | null {
     return this.socket;
+  }
+
+  /**
+   * Handles an incoming message and produces a response if needed
+   */
+  public async handleMessage(rawMessage: string): Promise<string | null> {
+    try {
+      const message = JSON.parse(rawMessage) as WSMessage;
+
+      if (message.type === "request") {
+        const requestMessage = message as WSRequestMessage;
+        try {
+          // Execute the procedure on this end's router
+          const result = await deserializeAndExecute(
+            this.router,
+            requestMessage.serializedCall,
+            {
+              createMprc: () => this.options.mrpc?.(),
+            } as ClientContext
+          );
+
+          // Return successful response
+          const response: WSResponseMessage = {
+            id: message.id,
+            type: "response",
+            result,
+          };
+          return JSON.stringify(response);
+        } catch (error) {
+          // Return error response
+          const errorResponse: WSErrorMessage = {
+            id: message.id,
+            type: "error",
+            error: {
+              message: error instanceof Error ? error.message : String(error),
+              stack: error instanceof Error ? error.stack : undefined,
+            },
+          };
+          return JSON.stringify(errorResponse);
+        }
+      } else if (message.type === "response") {
+        // Handle response to a previous request
+        const responseMessage = message as WSResponseMessage;
+        const request = this.pendingRequests.get(message.id);
+        if (request) {
+          clearTimeout(request.timeout);
+          request.resolve(responseMessage.result);
+          this.pendingRequests.delete(message.id);
+        }
+        return null; // No response needed for a response
+      } else if (message.type === "error") {
+        // Handle error response to a previous request
+        const errorMessage = message as WSErrorMessage;
+        const request = this.pendingRequests.get(message.id);
+        if (request) {
+          clearTimeout(request.timeout);
+          request.reject(new Error(errorMessage.error.message));
+          this.pendingRequests.delete(message.id);
+        }
+        return null; // No response needed for an error response
+      } else if (message.type === "notification") {
+        // Handle notification (could trigger events)
+        const notificationMessage = message as WSNotificationMessage;
+        if (
+          notificationMessage.direction === "server-to-client" &&
+          this.options.onNotification
+        ) {
+          this.options.onNotification(notificationMessage);
+        }
+        return null; // No response for notifications
+      } else {
+        throw new Error(`Unknown message type: ${message.type}`);
+      }
+    } catch (error) {
+      // Handle parsing errors or other unexpected issues
+      const errorResponse: WSErrorMessage = {
+        id: "error",
+        type: "error",
+        error: {
+          message: "Failed to process message",
+          code: "PARSE_ERROR",
+        },
+      };
+      return JSON.stringify(errorResponse);
+    }
   }
 
   /**

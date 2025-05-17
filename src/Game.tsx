@@ -75,13 +75,15 @@ export function Game() {
 
 function StartButton() {
   const websocket = useWebSocket();
+  const yourId = useGameStore((state) => state.yourId);
+
   return (
     <Button
-    // onClick={() => {
-    //   websocket.sendEvent("StartGame", {});
-    // }}
+      onClick={async () => {
+        if (!websocket || !yourId) return;
+        await websocket.game.startGame({ playerid: yourId });
+      }}
     >
-      {" "}
       Start
     </Button>
   );

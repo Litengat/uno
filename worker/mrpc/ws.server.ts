@@ -1,10 +1,24 @@
-import { inferClientType, Router } from "./mini-trpc";
+import { inferClientType, Router, deserializeAndExecute } from "./mini-trpc";
 import {
   WSHandler,
   WSMessage,
   WSNotificationMessage,
+  WSRequestMessage,
+  WSResponseMessage,
+  WSErrorMessage,
 } from "../../src/ws/ws.common";
 import { createMRPCClient } from "./mini-trpc";
+import { DrizzleSqliteDODatabase } from "drizzle-orm/durable-sqlite";
+import { clientRouter } from "../../src/ws/routes";
+
+/**
+ * Server-specific context for procedure handlers
+ */
+export type ServerContext = {
+  clientID: string;
+  createMprc: () => inferClientType<typeof clientRouter>;
+  db?: DrizzleSqliteDODatabase;
+};
 
 export interface WSServerOptions<TRouter extends Router> {
   /**
@@ -26,6 +40,7 @@ export interface WSServerOptions<TRouter extends Router> {
   onClientDisconnect?: (clientId: string) => void;
 
   mrpc?: (clientID: string) => inferClientType<TRouter>;
+  db?: DrizzleSqliteDODatabase;
 }
 
 /**
@@ -117,15 +132,109 @@ export class WSServer<TRouter extends Router> extends WSHandler {
       };
 
       // For all other messages, use the standard handler
-      const response = await this.handleMessage(rawMessage, mrpc);
+      const response = await this.handleMessage(
+        rawMessage,
+        clientId,
+        mrpc,
+        this.options.db
+      );
       if (response) {
         client.send(response);
       }
     } catch (error) {
       console.error(`Error handling client message from ${clientId}:`, error);
-      // Optionally send an error message back to the client
-      // const errorResponse = ... create WSErrorMessage ...;
-      // client.send(JSON.stringify(errorResponse));
+      // Send error response back to client
+      const errorResponse: WSErrorMessage = {
+        id: "error",
+        type: "error",
+        error: {
+          message: "Failed to process message",
+          code: "PARSE_ERROR",
+        },
+      };
+      client.send(JSON.stringify(errorResponse));
+    }
+  }
+
+  /**
+   * Handles an incoming message and produces a response if needed
+   */
+  public async handleMessage(
+    rawMessage: string,
+    clientId: string,
+    mrpc: () => inferClientType<Router> | undefined,
+    db?: DrizzleSqliteDODatabase
+  ): Promise<string | null> {
+    try {
+      const message = JSON.parse(rawMessage) as WSMessage;
+
+      if (message.type === "request") {
+        const requestMessage = message as WSRequestMessage;
+        try {
+          // Execute the procedure on this end's router
+          const result = await deserializeAndExecute(
+            this.router,
+            requestMessage.serializedCall,
+            {
+              clientID: clientId,
+              createMprc: mrpc,
+              db,
+            } as ServerContext
+          );
+
+          // Return successful response
+          const response: WSResponseMessage = {
+            id: message.id,
+            type: "response",
+            result,
+          };
+          return JSON.stringify(response);
+        } catch (error) {
+          // Return error response
+          const errorResponse: WSErrorMessage = {
+            id: message.id,
+            type: "error",
+            error: {
+              message: error instanceof Error ? error.message : String(error),
+              stack: error instanceof Error ? error.stack : undefined,
+            },
+          };
+          return JSON.stringify(errorResponse);
+        }
+      } else if (message.type === "response") {
+        // Handle response to a previous request
+        const responseMessage = message as WSResponseMessage;
+        const request = this.pendingRequests.get(message.id);
+        if (request) {
+          clearTimeout(request.timeout);
+          request.resolve(responseMessage.result);
+          this.pendingRequests.delete(message.id);
+        }
+        return null; // No response needed for a response
+      } else if (message.type === "error") {
+        // Handle error response to a previous request
+        const errorMessage = message as WSErrorMessage;
+        const request = this.pendingRequests.get(message.id);
+        if (request) {
+          clearTimeout(request.timeout);
+          request.reject(new Error(errorMessage.error.message));
+          this.pendingRequests.delete(message.id);
+        }
+        return null; // No response needed for an error response
+      } else {
+        throw new Error(`Unknown message type: ${message.type}`);
+      }
+    } catch (error) {
+      // Handle parsing errors or other unexpected issues
+      const errorResponse: WSErrorMessage = {
+        id: "error",
+        type: "error",
+        error: {
+          message: "Failed to process message",
+          code: "PARSE_ERROR",
+        },
+      };
+      return JSON.stringify(errorResponse);
     }
   }
 

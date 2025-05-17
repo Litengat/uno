@@ -23,6 +23,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useWebSocket } from "./WebsocketProvider";
+import { useGameStore } from "@/state";
 
 const DefautName = "defautName";
 
@@ -33,8 +34,9 @@ export function NameDialog({
   open: boolean;
   setOpen: (open: boolean) => void;
 }) {
-  // 1. Define your form.
-  const mrpc = useWebSocket();
+  const websocket = useWebSocket();
+  const yourId = useGameStore((state) => state.yourId);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -42,16 +44,18 @@ export function NameDialog({
     },
   });
 
-  // 2. Define a submit handler.
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    // Do something with the form values.
-    // ✅ This will be type-safe and validated.
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!websocket || !yourId) return;
+
+    await websocket.game.join({
+      playerid: yourId,
+      name: values.username,
+    });
 
     setOpen(false);
     localStorage.setItem(DefautName, values.username);
-
-    console.log(values);
   }
+
   return (
     <Dialog open={open}>
       <DialogContent className="sm:max-w-[425px]">

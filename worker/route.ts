@@ -2,12 +2,21 @@ import { z } from "zod";
 import { createOS } from "./mrpc/mini-trpc";
 import { clientRouter } from "../src/ws/routes";
 import { CardColorSchema } from "./types";
+import { DrizzleSqliteDODatabase } from "drizzle-orm/durable-sqlite";
+// Import event handlers
+import { join } from "./game/events/joinHandler";
+import { handleStartGame } from "./game/events/startGameHandler";
+import { handleDrawCard } from "./game/events/drawCardHandler";
+import { handleLayDown } from "./game/events/layDownHandler";
+import { handleLeave } from "./game/events/leaveHandler";
+import { ServerContext } from "./mrpc/ws.server";
 
 type client = {
   clientID: string;
+  db: DrizzleSqliteDODatabase;
 };
 
-export const os = createOS<typeof clientRouter>();
+export const os = createOS<ServerContext>();
 
 export const serverRouter = {
   users: {
@@ -30,30 +39,14 @@ export const serverRouter = {
   },
 
   game: {
-    join: os
-      .input(
-        z.object({
-          playerid: z.string(),
-          name: z.string(),
-        })
-      )
-      .handler(async ({ input, createMprc }) => {
-        const mrpc = createMprc();
-        // Handle join game logic
-        return { success: true };
-      }),
-
+    join: join,
     startGame: os
       .input(
         z.object({
           playerid: z.string(),
         })
       )
-      .handler(async ({ input, createMprc }) => {
-        const mrpc = createMprc();
-        // Handle start game logic
-        return { success: true };
-      }),
+      .handler(handleStartGame),
 
     drawCard: os
       .input(
@@ -61,11 +54,7 @@ export const serverRouter = {
           playerid: z.string(),
         })
       )
-      .handler(async ({ input, createMprc }) => {
-        const mrpc = createMprc();
-        // Handle draw card logic
-        return { success: true };
-      }),
+      .handler(handleDrawCard),
 
     layDown: os
       .input(
@@ -75,11 +64,7 @@ export const serverRouter = {
           wildColor: CardColorSchema.optional(),
         })
       )
-      .handler(async ({ input, createMprc }) => {
-        const mrpc = createMprc();
-        // Handle lay down card logic
-        return { success: true };
-      }),
+      .handler(handleLayDown),
 
     leave: os
       .input(
@@ -87,10 +72,6 @@ export const serverRouter = {
           playerid: z.string(),
         })
       )
-      .handler(async ({ input, createMprc }) => {
-        const mrpc = createMprc();
-        // Handle player leave logic
-        return { success: true };
-      }),
+      .handler(handleLeave),
   },
 };

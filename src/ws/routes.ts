@@ -57,7 +57,6 @@ export const clientRouter = {
         })
       )
       .handler(async ({ input }) => {
-        // Handle draw card logic
         return { success: true };
       }),
 
@@ -84,6 +83,17 @@ export const clientRouter = {
       )
       .handler(async ({ input }) => {
         // Handle player leave logic
+        return { success: true };
+      }),
+
+    yourId: os
+      .input(
+        z.object({
+          playerId: z.string(),
+        })
+      )
+      .handler(async ({ input }) => {
+        useGameStore.getState().setYourId(input.playerId);
         return { success: true };
       }),
 
@@ -118,7 +128,6 @@ export const clientRouter = {
       )
       .handler(async ({ input }) => {
         useCardStackStore.getState().addCardStackCard(input.card);
-        usePlayerStore.getState().decreaseplayerCards(input.playerId);
         return { success: true };
       }),
 
@@ -136,19 +145,8 @@ export const clientRouter = {
         return { success: true };
       }),
 
-    yourId: os
-      .input(
-        z.object({
-          playerId: z.string(),
-        })
-      )
-      .handler(async ({ input }) => {
-        useGameStore.getState().setYourId(input.playerId);
-        return { success: true };
-      }),
-
     gameStarted: os.input(z.object({})).handler(async () => {
-      // Handle game started event
+      useGameStore.getState().setGameStarted(true);
       return { success: true };
     }),
 

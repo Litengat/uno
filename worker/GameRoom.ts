@@ -74,6 +74,7 @@ export class GameRoom extends DurableObject {
         mrpc: (clientID) => {
           return this.mrpcServer.createTypedClientCaller(clientID);
         },
+        db: this.db,
       }
     );
   }

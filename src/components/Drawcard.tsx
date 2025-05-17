@@ -1,11 +1,14 @@
 import { CardBack } from "./Cardback";
 import { useWebSocket } from "./WebsocketProvider";
+import { useGameStore } from "@/state";
 
 export default function Drawcard() {
-  const { sendEvent } = useWebSocket();
+  const websocket = useWebSocket();
+  const yourId = useGameStore((state) => state.yourId);
 
-  const handleClick = () => {
-    sendEvent("DrawCard", {});
+  const handleClick = async () => {
+    if (!websocket || !yourId) return;
+    await websocket.game.drawCard({ playerid: yourId });
   };
 
   return (

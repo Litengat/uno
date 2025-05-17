@@ -1,20 +1,18 @@
 import { z } from "zod";
+import { DrizzleSqliteDODatabase } from "drizzle-orm/durable-sqlite";
+import { text } from "drizzle-orm/gel-core";
 
 // === Type Definitions ===
 
 /**
  * Type for a procedure with input validation and handler
  */
-export type Procedure<TInput, TOutput, ClientRouter extends Router> = {
+export type Procedure<TInput, TOutput, TContext> = {
   _input: z.ZodType<TInput>;
   _output: TOutput;
   _def: {
     input: z.ZodType<TInput>;
-    handler: (ctx: {
-      input: TInput;
-
-      createMprc: () => inferClientType<ClientRouter> | undefined;
-    }) => Promise<TOutput>;
+    handler: (ctx: TContext & { input: TInput }) => Promise<TOutput>;
   };
 };
 
@@ -51,17 +49,15 @@ export type inferProcedureOutput<T extends Procedure<any, any, any>> =
 /**
  * Creates type-safe procedures with Zod validation
  */
-
-export function createOS<ClientRouter extends Router>() {
+export function createOS<TContext>() {
   const os = {
     input: <TInput extends z.ZodType>(schema: TInput) => {
       return {
         handler: <TOutput>(
-          handler: (ctx: {
-            input: z.infer<TInput>;
-            createMprc: () => inferClientType<ClientRouter>;
-          }) => Promise<TOutput>
-        ): Procedure<z.infer<TInput>, TOutput, ClientRouter> => {
+          handler: (
+            ctx: TContext & { input: z.infer<TInput> }
+          ) => Promise<TOutput>
+        ): Procedure<z.infer<TInput>, TOutput, TContext> => {
           return {
             _input: schema,
             _output: {} as TOutput, // Placeholder used for type inference
@@ -113,13 +109,10 @@ type SerializedCall = {
 /**
  * Deserializes and executes a procedure call
  */
-export async function deserializeAndExecute<
-  TOutput,
-  clientRouter extends Router
->(
+export async function deserializeAndExecute<TOutput, TContext>(
   router: Router,
   serializedCall: any,
-  createMprc: () => inferClientType<clientRouter> | undefined
+  context: TContext
 ): Promise<TOutput> {
   const { path, input } = serializedCall as SerializedCall;
 
@@ -132,14 +125,14 @@ export async function deserializeAndExecute<
     current = current[segment];
   }
 
-  const procedure = current as Procedure<unknown, TOutput, clientRouter>;
+  const procedure = current as Procedure<unknown, TOutput, TContext>;
   // Validate the input using Zod
   try {
     const validatedInput = procedure._def.input.parse(input);
     // Execute the handler with properly validated input
     return await procedure._def.handler({
+      ...context,
       input: validatedInput,
-      createMprc: createMprc,
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -193,9 +186,6 @@ export function createMRPCClient<TRouter extends Router>(
               const validatedInput = current._def.input.parse(input);
 
               return callFn(newPath, validatedInput);
-
-              // Directly execute the handler without serialization for in-process calls
-              // return current._def.handler({ input: validatedInput });
             };
           }
 
