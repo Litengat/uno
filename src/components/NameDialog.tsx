@@ -48,8 +48,7 @@ export function NameDialog({
     console.log("lol");
     if (!mrcp) return;
 
-    mrcp.game.join({ name: values.username });
-
+    mrcp.meta.join({ name: values.username });
     setOpen(false);
     localStorage.setItem(DefautName, values.username);
   }

@@ -21,7 +21,7 @@ import { clientRouter } from "../../src/ws/routes";
  */
 export type ServerContext = {
   clientID: string;
-  createMprc: () => inferClientType<typeof clientRouter>;
+  createMprc: (clientId: string) => inferClientType<typeof clientRouter>;
   db?: DrizzleSqliteDODatabase;
 };
 /**
@@ -133,18 +133,11 @@ export class WSServer<TRouter extends Router> extends WSHandler {
         return;
       }
 
-      const mrpc = () => {
-        if (!this.options.mrpc) {
-          return;
-        }
-        return this.options.mrpc(clientId);
-      };
-
       // For all other messages, use the standard handler
       const response = await this.handleMessage(
         rawMessage,
         clientId,
-        mrpc,
+        this.options.mrpc ?? undefined,
         this.options.db
       );
       if (response) {
@@ -171,7 +164,7 @@ export class WSServer<TRouter extends Router> extends WSHandler {
   public async handleMessage(
     rawMessage: string,
     clientId: string,
-    mrpc: () => inferClientType<Router> | undefined,
+    mrpc: ((clientID: string) => inferClientType<TRouter>) | undefined,
     db?: DrizzleSqliteDODatabase
   ): Promise<string | null> {
     try {

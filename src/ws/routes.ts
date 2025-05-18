@@ -10,6 +10,14 @@ import {
 
 const os = createOS();
 
+const setPlayers = usePlayerStore.getState().setPlayers;
+const addCard = useHandStore.getState().addCard;
+const addCardStackCard = useCardStackStore.getState().addCardStackCard;
+const decreaseplayerCards = usePlayerStore.getState().decreaseplayerCards;
+const updatePlayerCards = usePlayerStore.getState().updatePlayerCards;
+const setYourId = useGameStore.getState().setYourId;
+const setCurrentPlayer = useGameStore.getState().setCurrentPlayer;
+
 export const clientRouter = {
   notifications: {
     showMessage: os
@@ -25,140 +33,37 @@ export const clientRouter = {
         return { success: true, shown: new Date().toISOString() };
       }),
   },
-
   game: {
-    join: os
-      .input(
-        z.object({
-          playerid: z.string(),
-          name: z.string(),
-        })
-      )
-      .handler(async ({ input }) => {
-        // Handle join game logic
-        return { success: true };
-      }),
-
-    startGame: os
-      .input(
-        z.object({
-          playerid: z.string(),
-        })
-      )
-      .handler(async ({ input }) => {
-        // Handle start game logic
-        return { success: true };
-      }),
-
-    drawCard: os
-      .input(
-        z.object({
-          playerid: z.string(),
-        })
-      )
-      .handler(async ({ input }) => {
-        return { success: true };
-      }),
-
-    layDown: os
-      .input(
-        z.object({
-          playerid: z.string(),
-          cardId: z.string(),
-          wildColor: z
-            .enum(["red", "blue", "green", "yellow", "black"])
-            .optional(),
-        })
-      )
-      .handler(async ({ input }) => {
-        // Handle lay down card logic
-        return { success: true };
-      }),
-
-    leave: os
-      .input(
-        z.object({
-          playerid: z.string(),
-        })
-      )
-      .handler(async ({ input }) => {
-        // Handle player leave logic
-        return { success: true };
-      }),
-
-    yourId: os
-      .input(
-        z.object({
-          playerId: z.string(),
-        })
-      )
-      .handler(async ({ input }) => {
-        useGameStore.getState().setYourId(input.playerId);
-        return { success: true };
-      }),
-
     updatePlayers: os
-      .input(
-        z.object({
-          players: z.array(PlayerSchema),
-        })
-      )
+      .input(z.object({ players: z.array(PlayerSchema) }))
       .handler(async ({ input }) => {
-        usePlayerStore.getState().setPlayers(input.players);
-        return { success: true };
+        setPlayers(input.players);
       }),
-
     cardDrawn: os
-      .input(
-        z.object({
-          card: CardSchema,
-        })
-      )
+      .input(z.object({ card: CardSchema }))
       .handler(async ({ input }) => {
-        useHandStore.getState().addCard(input.card);
-        return { success: true };
+        addCard(input.card);
       }),
-
     cardLaidDown: os
-      .input(
-        z.object({
-          playerId: z.string(),
-          card: CardSchema,
-        })
-      )
+      .input(z.object({ playerId: z.string(), card: CardSchema }))
       .handler(async ({ input }) => {
-        useCardStackStore.getState().addCardStackCard(input.card);
-        return { success: true };
+        addCardStackCard(input.card);
+        decreaseplayerCards(input.playerId);
       }),
-
-    updateCardCount: os
-      .input(
-        z.object({
-          playerId: z.string(),
-          numberOfCards: z.number(),
-        })
-      )
+    yourId: os
+      .input(z.object({ playerId: z.string() }))
       .handler(async ({ input }) => {
-        usePlayerStore
-          .getState()
-          .updatePlayerCards(input.playerId, input.numberOfCards);
-        return { success: true };
+        setYourId(input.playerId);
       }),
-
-    gameStarted: os.input(z.object({})).handler(async () => {
-      useGameStore.getState().setGameStarted(true);
-      return { success: true };
-    }),
-
     nextTurn: os
-      .input(
-        z.object({
-          playerId: z.string(),
-        })
-      )
+      .input(z.object({ playerId: z.string() }))
       .handler(async ({ input }) => {
-        useGameStore.getState().setCurrentPlayer(input.playerId);
-        return { success: true };
+        setCurrentPlayer(input.playerId);
+      }),
+    updateCardCount: os
+      .input(z.object({ playerId: z.string(), number: z.number() }))
+      .handler(async ({ input }) => {
+        updatePlayerCards(input.playerId, input.number);
       }),
   },
 };

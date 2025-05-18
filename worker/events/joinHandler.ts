@@ -9,7 +9,7 @@ import { count } from "drizzle-orm";
 const joinHandler = os
   .input(z.object({ name: z.string() }))
   .handler(async ({ input, clientID, createMprc, db }) => {
-    const mrpc = createMprc();
+    const mrpc = createMprc(clientID);
 
     if (!db) {
       throw new Error("Database not available");
@@ -33,13 +33,18 @@ const joinHandler = os
 
     // Update all players with the new player list
     const players = await db.select().from(playersTable).all();
-    await mrpc.game.updatePlayers({
-      players: players.map((player: any) => ({
-        ...player,
-        numberOfCards: 0, // New players start with 0 cards
-      })),
-    });
+    console.log(players);
+    // update players for everyone
 
+    players.map((player) => {
+      const mrpc = createMprc(player.id);
+      mrpc.game.updatePlayers({
+        players: players.map((player: any) => ({
+          ...player,
+          numberOfCards: 0, // New players start with 0 cards
+        })),
+      });
+    });
     return { success: true };
   });
 

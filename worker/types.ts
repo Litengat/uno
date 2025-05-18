@@ -1,7 +1,6 @@
 import { z } from "zod";
 
 export type Attachment = {
-  id: string;
   clientId: string;
 };
 

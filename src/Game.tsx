@@ -62,7 +62,7 @@ function StartButton() {
     <Button
       onClick={async () => {
         if (!mrcp || !yourId) return;
-        await mrcp.game.startGame({ playerid: yourId });
+        await mrcp.meta.startGame({ playerid: yourId });
       }}
     >
       Start

@@ -37,14 +37,14 @@ export class GameRoom extends DurableObject {
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
-    this.db = drizzle(ctx.storage);
+    this.db = drizzle(ctx.storage, { logger: true });
     this.sessions = new Map();
     ctx.getWebSockets().forEach((ws) => {
       const meta = ws.deserializeAttachment() as Attachment | undefined;
       if (!meta) {
         return;
       }
-      this.sessions.set(meta.id, ws);
+      this.sessions.set(meta.clientId, ws);
     });
     ctx.blockConcurrencyWhile(async () => {
       await this._migrate();
@@ -88,18 +88,16 @@ export class GameRoom extends DurableObject {
 
     this.ctx.acceptWebSocket(server);
 
-    const id = crypto.randomUUID();
     const clientId =
       request.headers.get("sec-websocket-key") || `client-${Date.now()}`;
 
     server.serializeAttachment({
-      id: id,
       name: undefined,
       clientId: clientId,
     } as Attachment);
 
     this.mrpcServer.registerClient(clientId, (message) => server.send(message));
-    this.sessions.set(id, server);
+    this.sessions.set(clientId, server);
 
     return new Response(null, {
       status: 101,
@@ -109,55 +107,15 @@ export class GameRoom extends DurableObject {
 
   async webSocketMessage(ws: WebSocket, message: ArrayBuffer | string) {
     const meta = ws.deserializeAttachment() as Attachment;
-    await this.mrpcServer.handleClientMessage(
-      meta.clientId,
-      message.toString()
-    );
 
     if (!meta) {
       sendError(ws, "Invalid attachment");
       return;
     }
-
-    const parsedMessage = safeJsonParse(
-      typeof message === "string" ? message : new TextDecoder().decode(message)
+    await this.mrpcServer.handleClientMessage(
+      meta.clientId,
+      message.toString()
     );
-
-    if (parsedMessage.isErr()) {
-      sendError(ws, parsedMessage.error);
-      return;
-    }
-
-    // Handle game events through tRPC
-    const event = {
-      playerid: meta.id,
-      ...parsedMessage.value,
-    };
-
-    const mrpc = this.mrpcServer.createTypedClientCaller(
-      meta.clientId
-    ) as GameClientType;
-    switch (event.type) {
-      case "Join":
-        await mrpc.game.join({ playerid: event.playerid, name: event.name });
-        break;
-      case "StartGame":
-        await mrpc.game.startGame({ playerid: event.playerid });
-        break;
-      case "DrawCard":
-        await mrpc.game.drawCard({ playerid: event.playerid });
-        break;
-      case "LayDown":
-        await mrpc.game.layDown({
-          playerid: event.playerid,
-          cardId: event.cardId,
-          wildColor: event.wildColor,
-        });
-        break;
-      case "leave":
-        await mrpc.game.leave({ playerid: event.playerid });
-        break;
-    }
   }
 
   async webSocketOpen(ws: WebSocket) {
@@ -169,7 +127,7 @@ export class GameRoom extends DurableObject {
     this.mrpcServer.registerClient(meta.clientId, (message) =>
       ws.send(message)
     );
-    this.sessions.set(meta.id, ws);
+    this.sessions.set(meta.clientId, ws);
   }
 
   async webSocketClose(
@@ -185,8 +143,12 @@ export class GameRoom extends DurableObject {
       return;
     }
     this.mrpcServer.removeClient(meta.clientId);
-    this.sessions.delete(meta.id);
-    this.db.delete(playersTable).where(eq(playersTable.id, meta.id)).run();
+    this.sessions.delete(meta.clientId);
+
+    await this.db
+      .delete(playersTable)
+      .where(eq(playersTable.id, meta.clientId))
+      .run();
   }
 
   // send a message to all players
