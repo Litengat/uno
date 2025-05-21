@@ -5,6 +5,7 @@ import { Button } from "./components/ui/button";
 
 import { Link } from "react-router";
 import { SignOutButton } from "./components/SignOutButton";
+import { Games } from "./components/Games";
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
         </Button>
         <SignOutButton />
         <Link to="/create">Create Game</Link>
+        <Games />
       </Authenticated>
       <Unauthenticated>
         <p className="text-xl text-slate-600">Sign in to play UNO</p>

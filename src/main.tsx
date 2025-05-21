@@ -12,6 +12,7 @@ import { ConvexReactClient } from "convex/react";
 
 import "./index.css";
 import { Toaster } from "./components/ui/sonner.tsx";
+import Index from "./lobby/Index.tsx";
 
 const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
 
@@ -25,6 +26,8 @@ createRoot(document.getElementById("root")!).render(
             <Route path="/create" element={<CreateGame />} />
             <Route path="/cardtest" element={<CardTest />} />
             <Route path="/game/:id" element={<Game />} />
+            <Route path="/lobbies" element={<Index />} />
+            <Route path="/profile/:id" element={<Index />} />
           </Routes>
         </BrowserRouter>
         <Toaster />

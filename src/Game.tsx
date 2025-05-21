@@ -27,27 +27,25 @@ export function Game() {
 
   return (
     <div>
-      <ConvexAuthProvider client={convex}>
-        <DndContextProvider>
-          <div className="flex justify-center items-center">
-            <div className="flex justify-center fixed -bottom-120 z-10">
-              <Hand />
-            </div>
+      <DndContextProvider>
+        <div className="flex justify-center items-center">
+          <div className="flex justify-center fixed -bottom-120 z-10">
+            <Hand />
           </div>
-          {/* <NameDialog open={openNameDialog} setOpen={setOpenNameDialog} /> */}
-          <StartButton />
-          <JoinBotton />
-          {/* <div className=" absolute w-screen h-screen"> */}
-          <div className="flex justify-center items-center">
-            <div className="flex gap-30">
-              <Drawcard />
-              <LayedCardstack />
-            </div>
+        </div>
+        {/* <NameDialog open={openNameDialog} setOpen={setOpenNameDialog} /> */}
+        <StartButton />
+        <JoinBotton />
+        {/* <div className=" absolute w-screen h-screen"> */}
+        <div className="flex justify-center items-center">
+          <div className="flex gap-30">
+            <Drawcard />
+            <LayedCardstack />
+          </div>
 
-            <Otherplayers />
-          </div>
-        </DndContextProvider>
-      </ConvexAuthProvider>
+          <Otherplayers />
+        </div>
+      </DndContextProvider>
     </div>
   );
 }
