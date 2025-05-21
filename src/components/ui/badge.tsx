@@ -25,6 +25,16 @@ const badgeVariants = cva(
   }
 )
 
+/**
+ * Renders a styled badge element with customizable appearance variants.
+ *
+ * Supports rendering as a different element when {@link asChild} is true, using the {@link Slot} component.
+ *
+ * @param variant - The visual style of the badge. Options are "default", "secondary", "destructive", or "outline".
+ * @param asChild - If true, renders as a child component instead of a span.
+ *
+ * @returns A badge element with the specified styling and props.
+ */
 function Badge({
   className,
   variant,

@@ -15,6 +15,13 @@ import { catchError } from "@/handelErrors";
 const stackSpread = 5;
 const maxNumberofVisibleCards = 5;
 
+/**
+ * Renders the discard pile for a card game with drag-and-drop support and wild card color selection.
+ *
+ * Displays the most recent cards in the discard pile and allows players to play cards onto the pile by dragging them. If a wild card is played, prompts the user to select a color before completing the action.
+ *
+ * @remark Only the last few cards in the discard pile are visible. Cards can only be played if they are valid according to game rules.
+ */
 export function LayedCardstack() {
   const gameId = useGame();
   const { isOver, over, setNodeRef } = useDroppable({

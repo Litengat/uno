@@ -17,6 +17,11 @@ import { useState } from "react";
 import { useGame } from "./hooks/useGame";
 import { catchError } from "./handelErrors";
 
+/**
+ * Renders the main game interface, including player hand, controls, and game area.
+ *
+ * Integrates drag-and-drop context and displays components for drawing cards, laying cards, and viewing other players. Provides buttons to start or join the game.
+ */
 export function Game() {
   const gameId = useGame();
   const game = useQuery(api.game.getGame, { gameId });
@@ -50,6 +55,11 @@ export function Game() {
   );
 }
 
+/**
+ * Renders a button that starts the game when clicked.
+ *
+ * Initiates the start game mutation for the current game using the game ID from {@link useGame}.
+ */
 function StartButton() {
   const gameId = useGame();
   const startGameMutation = useMutation(api.game.startGame);
@@ -64,6 +74,11 @@ function StartButton() {
     </Button>
   );
 }
+/**
+ * Renders a button that allows the user to join the current game.
+ *
+ * When clicked, triggers a mutation to join the game associated with the current game ID.
+ */
 function JoinBotton() {
   const gameId = useGame();
   const JoinMutation = useMutation(api.game.joinGame);
@@ -85,6 +100,11 @@ const playerPostions = [
   { pos: "top-[15%] right-10", rot: -70 },
 ];
 
+/**
+ * Renders all other players in the game, positioning and rotating each player according to predefined layout settings.
+ *
+ * @returns A container with `OtherPlayer` components for each player in the game, or nothing if no players are loaded.
+ */
 function Otherplayers() {
   const gameId = useGame();
   const players = useQuery(api.game.listPlayers, { gameId });

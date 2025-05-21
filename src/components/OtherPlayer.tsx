@@ -15,6 +15,14 @@ type Player = {
   numberOfCards: number;
 };
 
+/**
+ * Renders a visual representation of another player in the card game, displaying their name and a fan of card backs arranged in an arc.
+ *
+ * @param player - The player to display, including their name and number of cards.
+ * @param rotation - Optional rotation angle (in degrees) to rotate the entire card fan.
+ *
+ * @returns A React element showing the player's name and their cards fanned out in a circular arc.
+ */
 export default function OtherPlayer({
   player,
   rotation = 0,

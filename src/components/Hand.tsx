@@ -17,6 +17,13 @@ export default function Sortable() {
   return <Hand></Hand>;
 }
 
+/**
+ * Displays the player's hand of cards in a draggable, fan-shaped layout.
+ *
+ * Fetches the current player's hand from the game API and arranges the cards along a circular arc. Enables drag-and-drop sorting of cards within the hand.
+ *
+ * @remark Returns nothing if the hand has not yet loaded.
+ */
 export function Hand() {
   // initialize cards as ["0","1","2",…]
   const gameId = useGame();

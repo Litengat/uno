@@ -5,6 +5,13 @@ import { Card } from "./schema";
 
 const colors = ["red", "blue", "green", "yellow"] as const;
 
+/**
+ * Generates and returns a shuffled deck of cards for the game.
+ *
+ * The deck includes number cards (0–8, two copies per color), action cards ("skip", "reverse", "draw-two", two copies per color), and wild cards ("wild", "wild-draw-four", four copies each). Each card is assigned a unique ID.
+ *
+ * @returns A shuffled array of {@link Card} objects representing the full game deck.
+ */
 function createDeck(): Card[] {
   const numbers = Array.from({ length: 9 }).map((_, i) => i);
   const actions = ["skip", "reverse", "draw-two"] as const;
@@ -48,6 +55,14 @@ function createDeck(): Card[] {
   return shuffle(deck);
 }
 
+/**
+ * Returns a new array with the elements randomly shuffled.
+ *
+ * The original array is not modified.
+ *
+ * @param array - The array to shuffle.
+ * @returns A new array containing the shuffled elements of {@link array}.
+ */
 function shuffle<T>(array: T[]): T[] {
   const newArray = [...array];
   for (let i = newArray.length - 1; i > 0; i--) {
