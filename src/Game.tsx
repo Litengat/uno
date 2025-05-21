@@ -1,7 +1,6 @@
 import { Hand } from "@/components/Hand";
 import { useParams } from "react-router";
 import { api } from "../convex/_generated/api";
-import { NameDialog } from "./components/NameDialog";
 
 import DndContextProvider from "./components/DndContext";
 import { ConvexReactClient, useQuery, useMutation } from "convex/react";

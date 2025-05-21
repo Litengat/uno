@@ -9,10 +9,6 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { CardColor } from "@/types";
-import { useMutation } from "convex/react";
-import { api } from "@/../convex/_generated/api";
-import { useGame } from "@/hooks/useGame";
-import { useAktiveCard } from "./DndContext";
 
 type ColorOption = Exclude<CardColor, "black">;
 
@@ -27,21 +23,12 @@ const WildCardColorDialog: React.FC<WildCardColorDialogProps> = ({
   open,
   setOpen,
 }) => {
-  const playCard = useMutation(api.game.playCard);
-  const gameId = useGame();
-  const { activeCard } = useAktiveCard();
   const handleColorSelect = (color: ColorOption) => {
     if (onColorSelect) {
       onColorSelect(color);
     }
     toast(`Selected color: ${color.toUpperCase()}`, {
       icon: "🎮",
-    });
-    if (!activeCard) throw new Error("No active card found" + activeCard);
-
-    playCard({
-      gameId,
-      cardId: activeCard.id,
     });
     setOpen(false);
   };

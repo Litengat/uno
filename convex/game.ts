@@ -3,13 +3,9 @@ import { mutation, query } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { Card } from "./schema";
 
+const colors = ["red", "blue", "green", "yellow"] as const;
+
 function createDeck(): Card[] {
-  const colors: ("red" | "blue" | "green" | "yellow")[] = [
-    "red",
-    "blue",
-    "green",
-    "yellow",
-  ];
   const numbers = Array.from({ length: 9 }).map((_, i) => i);
   const actions = ["skip", "reverse", "draw-two"] as const;
 
@@ -138,6 +134,7 @@ export const playCard = mutation({
   args: {
     gameId: v.id("games"),
     cardId: v.string(),
+    color: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -161,7 +158,12 @@ export const playCard = mutation({
     if (!card) throw new ConvexError("Card not found");
 
     const topCard = game.discardPile[game.discardPile.length - 1];
-    if (card.color !== topCard.color && card.type !== topCard.type) {
+
+    if (
+      card.color !== topCard.color &&
+      card.type !== topCard.type &&
+      card.color !== "black"
+    ) {
       throw new ConvexError("Invalid move");
     }
 
@@ -170,8 +172,21 @@ export const playCard = mutation({
 
     await ctx.db.patch(playerHand._id, { cards: newHand });
 
+    if (!args.color) {
+      args.color;
+    }
+
+    const newcard: Card = {
+      ...card,
+      color: (args.color ?? card.color) as
+        | "red"
+        | "blue"
+        | "green"
+        | "yellow"
+        | "black",
+    };
     // Add card to discard pile
-    const newDiscardPile = [...game.discardPile, card];
+    const newDiscardPile = [...game.discardPile, newcard];
 
     // Handle special cards
     let nextPlayer =
@@ -193,6 +208,7 @@ export const playCard = mutation({
       if (!nextPlayerHand) throw new ConvexError("Next player hand not found");
 
       const newCards = game.deck.slice(0, 2);
+
       await ctx.db.patch(nextPlayerHand._id, {
         cards: [...nextPlayerHand.cards, ...newCards],
       });

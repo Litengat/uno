@@ -72,6 +72,12 @@ export function LayedCardstack() {
     if (!dialogCard) return;
     console.log("Active card:", dialogCard);
     const card = { ...dialogCard, color: color };
+    playCard({
+      gameId,
+      cardId: card.id,
+      color: color,
+    });
+    setOpen(false);
     // addLastCard(card);
     // sendEvent("LayDown", {
     //   cardId: card.id,
