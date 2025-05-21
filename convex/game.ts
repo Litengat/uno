@@ -296,3 +296,25 @@ export const listGames = query({
       .collect();
   },
 });
+
+export const listPlayers = query({
+  args: { gameId: v.id("games") },
+  handler: async (ctx, args) => {
+    const playerHands = await ctx.db
+      .query("playerHands")
+      .withIndex("by_game", (q) => q.eq("gameId", args.gameId))
+      .collect();
+    return Promise.all(
+      (playerHands ?? []).map(async (q) => {
+        const user = await ctx.db.get(q.playerId);
+
+        return {
+          name: user?.name,
+          image: user?.image,
+          isAnonymous: user?.isAnonymous ?? true,
+          numberOfCards: q.cards.length,
+        };
+      })
+    );
+  },
+});

@@ -18,10 +18,10 @@ import { Id } from "convex/_generated/dataModel";
 import { useGame } from "./hooks/useGame";
 
 export function Game() {
-  const gameId = useGame()
-  const game = useQuery(api.game.getGame,{gameId})
+  const gameId = useGame();
+  const game = useQuery(api.game.getGame, { gameId });
 
-  const players = game?.players[0]
+  const players = game?.players[0];
   const [openNameDialog, setOpenNameDialog] = useState(true);
 
   const convex = new ConvexReactClient(
@@ -78,12 +78,12 @@ const playerPostions = [
 
 function Otherplayers() {
   const gameId = useGame();
-  const x = useMutation(api.game.)
+  const players = useQuery(api.game.listPlayers, { gameId });
 
   console.log(players);
   return (
     <div className="absolute left-0 top-0 right-0 bottom-0 w-screen h-screen -z-1">
-      {otherplayers.map((player, i) => (
+      {playerPostions.map((player, i) => (
         <div className={`absolute ${playerPostions[i].pos}`}>
           <OtherPlayer player={player} rotation={playerPostions[i].rot} />
         </div>
