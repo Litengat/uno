@@ -1,44 +1,36 @@
 import { Hand } from "@/components/Hand";
 import { useParams } from "react-router";
-
+import { api } from "../convex/_generated/api";
 import { NameDialog } from "./components/NameDialog";
 
 import DndContextProvider from "./components/DndContext";
-
+import { ConvexReactClient, useQuery, useMutation } from "convex/react";
+import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import { LayedCardstack } from "./components/LayedCardstack";
 
 import { Button } from "./components/ui/button";
-import {
-  useWebSocket,
-  WebSocketProvider,
-} from "@/components/WebsocketProvider";
+
 import Drawcard from "./components/Drawcard";
 import OtherPlayer from "./components/OtherPlayer";
-import { useGameStore, usePlayerStore } from "./state";
+
 import { useState } from "react";
+import { Id } from "convex/_generated/dataModel";
+import { useGame } from "./hooks/useGame";
 
 export function Game() {
-  const { id } = useParams();
-  if (!id) {
-    throw new Error("No game ID provided");
-  } // Ensure id is a string
-  const url = import.meta.env.VITE_WEBSOCKET_URL + id;
+  const gameId = useGame()
+  const game = useQuery(api.game.getGame,{gameId})
 
+  const players = game?.players[0]
   const [openNameDialog, setOpenNameDialog] = useState(true);
 
-  // const { sendMessage, lastMessage, readyState } = useWebSocket(
-  //   `ws://localhost:5173/websocket/${id}`,
-  //   {
-  //     onOpen: () => console.log("WebSocket connection opened"),
-  //     onClose: () => console.log("WebSocket connection closed"),
-  //     onError: (event) => console.error("WebSocket error:", event),
-  //     shouldReconnect: (closeEvent) => true,
-  //   }
-  // );
+  const convex = new ConvexReactClient(
+    import.meta.env.VITE_CONVEX_URL as string
+  );
 
   return (
     <div>
-      <WebSocketProvider url={url}>
+      <ConvexAuthProvider client={convex}>
         <DndContextProvider>
           <div className="flex justify-center items-center">
             <div className="flex justify-center fixed -bottom-120 z-10">
@@ -57,17 +49,18 @@ export function Game() {
             <Otherplayers />
           </div>
         </DndContextProvider>
-      </WebSocketProvider>
+      </ConvexAuthProvider>
     </div>
   );
 }
 
 function StartButton() {
-  const websocket = useWebSocket();
+  const gameId = useGame();
+  const startGameMutation = useMutation(api.game.startGame);
   return (
     <Button
       onClick={() => {
-        websocket.sendEvent("StartGame", {});
+        void startGameMutation({ gameId });
       }}
     >
       {" "}
@@ -84,9 +77,8 @@ const playerPostions = [
 ];
 
 function Otherplayers() {
-  const players = usePlayerStore((store) => store.players);
-  const yourId = useGameStore((store) => store.yourId);
-  const otherplayers = players.filter((p) => p.id !== yourId).slice(0, 4);
+  const gameId = useGame();
+  const x = useMutation(api.game.)
 
   console.log(players);
   return (
