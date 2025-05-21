@@ -1,11 +1,7 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
-
-type Card = {
-  color: "red" | "blue" | "green" | "yellow";
-  value: string;
-};
+import { Card } from "./schema";
 
 function createDeck(): Card[] {
   const colors: ("red" | "blue" | "green" | "yellow")[] = [
@@ -14,29 +10,45 @@ function createDeck(): Card[] {
     "green",
     "yellow",
   ];
-  const numbers = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
-  const actions = ["skip", "reverse", "draw2"];
+  const numbers = Array.from({ length: 9 }).map((_, i) => i);
+  const actions = ["skip", "reverse", "draw-two"] as const;
 
   const deck: Card[] = [];
 
   // Add number cards
   for (const color of colors) {
     for (const number of numbers) {
-      deck.push({ color, value: number });
-      if (number !== "0") {
-        deck.push({ color, value: number });
-      }
+      deck.push({
+        id: crypto.randomUUID(),
+        color,
+        number: number,
+        type: "number",
+      });
+      deck.push({
+        id: crypto.randomUUID(),
+        color,
+        number: number,
+        type: "number",
+      });
     }
   }
 
   // Add action cards
   for (const color of colors) {
     for (const action of actions) {
-      deck.push({ color, value: action });
-      deck.push({ color, value: action });
+      deck.push({ id: crypto.randomUUID(), color, type: action });
+      deck.push({ id: crypto.randomUUID(), color, type: action });
     }
   }
-
+  Array.from({ length: 4 }).map((_, i) => {
+    deck.push({
+      id: crypto.randomUUID(),
+      color: "black",
+      type: "wild-draw-four",
+    });
+    deck.push({ id: crypto.randomUUID(), color: "black", type: "wild" });
+  });
+  console.log(deck);
   return shuffle(deck);
 }
 
@@ -53,12 +65,13 @@ export const createGame = mutation({
   args: {},
   handler: async (ctx) => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+    if (!userId) throw new ConvexError("Not authenticated");
 
     const deck = createDeck();
     const [firstCard, ...remainingDeck] = deck;
 
     return await ctx.db.insert("games", {
+      id: crypto.randomUUID(),
       creatorId: userId,
       players: [userId],
       currentPlayer: 0,
@@ -74,13 +87,14 @@ export const joinGame = mutation({
   args: { gameId: v.id("games") },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+    if (!userId) throw new ConvexError("Not authenticated");
 
     const game = await ctx.db.get(args.gameId);
-    if (!game) throw new Error("Game not found");
-    if (game.status !== "waiting") throw new Error("Game already started");
-    if (game.players.includes(userId)) throw new Error("Already in game");
-    if (game.players.length >= 4) throw new Error("Game is full");
+    if (!game) throw new ConvexError("Game not found");
+    if (game.status !== "waiting")
+      throw new ConvexError("Game already started");
+    if (game.players.includes(userId)) throw new ConvexError("Already in game");
+    if (game.players.length >= 4) throw new ConvexError("Game is full");
 
     await ctx.db.patch(args.gameId, {
       players: [...game.players, userId],
@@ -92,14 +106,16 @@ export const startGame = mutation({
   args: { gameId: v.id("games") },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+    if (!userId) throw new ConvexError("Not authenticated");
 
     const game = await ctx.db.get(args.gameId);
-    if (!game) throw new Error("Game not found");
+    if (!game) throw new ConvexError("Game not found");
     if (game.creatorId !== userId)
-      throw new Error("Only creator can start game");
-    if (game.players.length < 2) throw new Error("Need at least 2 players");
-    if (game.status !== "waiting") throw new Error("Game already started");
+      throw new ConvexError("Only creator can start game");
+    if (game.players.length < 2)
+      throw new ConvexError("Need at least 2 players");
+    if (game.status !== "waiting")
+      throw new ConvexError("Game already started");
 
     // Deal 7 cards to each player
     for (const playerId of game.players) {
@@ -121,36 +137,37 @@ export const startGame = mutation({
 export const playCard = mutation({
   args: {
     gameId: v.id("games"),
-    cardIndex: v.number(),
+    cardId: v.string(),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+    if (!userId) throw new ConvexError("Not authenticated");
 
     const game = await ctx.db.get(args.gameId);
-    if (!game) throw new Error("Game not found");
-    if (game.status !== "playing") throw new Error("Game not in progress");
+    if (!game) throw new ConvexError("Game not found");
+    if (game.status !== "playing")
+      throw new ConvexError("Game not in progress");
     if (game.players[game.currentPlayer] !== userId)
-      throw new Error("Not your turn");
+      throw new ConvexError("Not your turn");
 
     const playerHand = await ctx.db
       .query("playerHands")
       .withIndex("by_game", (q) => q.eq("gameId", args.gameId))
       .filter((q) => q.eq(q.field("playerId"), userId))
       .unique();
-    if (!playerHand) throw new Error("Player hand not found");
+    if (!playerHand) throw new ConvexError("Player hand not found");
 
-    const card = playerHand.cards[args.cardIndex];
-    if (!card) throw new Error("Card not found");
+    const card = playerHand.cards.filter((q) => q.id === args.cardId)[0];
+    if (!card) throw new ConvexError("Card not found");
 
     const topCard = game.discardPile[game.discardPile.length - 1];
-    if (card.color !== topCard.color && card.value !== topCard.value) {
-      throw new Error("Invalid move");
+    if (card.color !== topCard.color && card.type !== topCard.type) {
+      throw new ConvexError("Invalid move");
     }
 
     // Remove card from hand
-    const newHand = [...playerHand.cards];
-    newHand.splice(args.cardIndex, 1);
+    const newHand = playerHand.cards.filter((c) => c.id !== args.cardId);
+
     await ctx.db.patch(playerHand._id, { cards: newHand });
 
     // Add card to discard pile
@@ -162,18 +179,18 @@ export const playCard = mutation({
     if (nextPlayer < 0) nextPlayer += game.players.length;
 
     let direction = game.direction;
-    if (card.value === "reverse") {
+    if (card.type === "reverse") {
       direction *= -1;
-    } else if (card.value === "skip") {
+    } else if (card.type === "skip") {
       nextPlayer = (nextPlayer + game.direction) % game.players.length;
       if (nextPlayer < 0) nextPlayer += game.players.length;
-    } else if (card.value === "draw2") {
+    } else if (card.type === "draw-two") {
       const nextPlayerHand = await ctx.db
         .query("playerHands")
         .withIndex("by_game", (q) => q.eq("gameId", args.gameId))
         .filter((q) => q.eq(q.field("playerId"), game.players[nextPlayer]))
         .unique();
-      if (!nextPlayerHand) throw new Error("Next player hand not found");
+      if (!nextPlayerHand) throw new ConvexError("Next player hand not found");
 
       const newCards = game.deck.slice(0, 2);
       await ctx.db.patch(nextPlayerHand._id, {
@@ -205,20 +222,21 @@ export const drawCard = mutation({
   args: { gameId: v.id("games") },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+    if (!userId) throw new ConvexError("Not authenticated");
 
     const game = await ctx.db.get(args.gameId);
-    if (!game) throw new Error("Game not found");
-    if (game.status !== "playing") throw new Error("Game not in progress");
+    if (!game) throw new ConvexError("Game not found");
+    if (game.status !== "playing")
+      throw new ConvexError("Game not in progress");
     if (game.players[game.currentPlayer] !== userId)
-      throw new Error("Not your turn");
+      throw new ConvexError("Not your turn");
 
     const playerHand = await ctx.db
       .query("playerHands")
       .withIndex("by_game", (q) => q.eq("gameId", args.gameId))
       .filter((q) => q.eq(q.field("playerId"), userId))
       .unique();
-    if (!playerHand) throw new Error("Player hand not found");
+    if (!playerHand) throw new ConvexError("Player hand not found");
 
     // Draw a card
     const [newCard, ...remainingDeck] = game.deck;
@@ -256,7 +274,7 @@ export const getGame = query({
   args: { gameId: v.id("games") },
   handler: async (ctx, args) => {
     const game = await ctx.db.get(args.gameId);
-    if (!game) throw new Error("Game not found");
+    if (!game) throw new ConvexError("Game not found");
 
     const playerHands = await ctx.db
       .query("playerHands")
@@ -276,7 +294,7 @@ export const getMyHand = query({
   args: { gameId: v.id("games") },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+    if (!userId) throw new ConvexError("Not authenticated");
 
     const playerHand = await ctx.db
       .query("playerHands")
@@ -310,11 +328,35 @@ export const listPlayers = query({
 
         return {
           name: user?.name,
+          id: user?._id,
           image: user?.image,
           isAnonymous: user?.isAnonymous ?? true,
           numberOfCards: q.cards.length,
         };
       })
     );
+  },
+});
+export const listdiscardPile = query({
+  args: { gameId: v.id("games") },
+  handler: async (ctx, args) => {
+    const game = await ctx.db
+      .query("games")
+      .withIndex("by_id", (q) => q.eq("_id", args.gameId))
+      .unique();
+
+    return game?.discardPile;
+  },
+});
+
+export const isYourTurn = query({
+  args: { gamesId: v.id("games"), userId: v.string() },
+  handler: async (ctx, args) => {
+    const game = await ctx.db
+      .query("games")
+      .withIndex("by_id", (q) => q.eq("_id", args.gamesId))
+      .unique();
+
+    return game?.players[game.currentPlayer] !== args.userId;
   },
 });

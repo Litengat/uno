@@ -14,15 +14,13 @@ import Drawcard from "./components/Drawcard";
 import OtherPlayer from "./components/OtherPlayer";
 
 import { useState } from "react";
-import { Id } from "convex/_generated/dataModel";
+
 import { useGame } from "./hooks/useGame";
+import { catchError } from "./handelErrors";
 
 export function Game() {
   const gameId = useGame();
   const game = useQuery(api.game.getGame, { gameId });
-
-  const players = game?.players[0];
-  const [openNameDialog, setOpenNameDialog] = useState(true);
 
   const convex = new ConvexReactClient(
     import.meta.env.VITE_CONVEX_URL as string
@@ -37,8 +35,9 @@ export function Game() {
               <Hand />
             </div>
           </div>
-          <NameDialog open={openNameDialog} setOpen={setOpenNameDialog} />
+          {/* <NameDialog open={openNameDialog} setOpen={setOpenNameDialog} /> */}
           <StartButton />
+          <JoinBotton />
           {/* <div className=" absolute w-screen h-screen"> */}
           <div className="flex justify-center items-center">
             <div className="flex gap-30">
@@ -60,7 +59,7 @@ function StartButton() {
   return (
     <Button
       onClick={() => {
-        void startGameMutation({ gameId });
+        catchError(startGameMutation({ gameId }));
       }}
     >
       {" "}
@@ -68,7 +67,20 @@ function StartButton() {
     </Button>
   );
 }
-
+function JoinBotton() {
+  const gameId = useGame();
+  const JoinMutation = useMutation(api.game.joinGame);
+  return (
+    <Button
+      onClick={() => {
+        catchError(JoinMutation({ gameId }));
+      }}
+    >
+      {" "}
+      Join
+    </Button>
+  );
+}
 const playerPostions = [
   { pos: "top-[15%] left-10", rot: 110 },
   { pos: "top-[75%] left-10", rot: 70 },
@@ -80,10 +92,12 @@ function Otherplayers() {
   const gameId = useGame();
   const players = useQuery(api.game.listPlayers, { gameId });
 
+  if (!players) return;
+
   console.log(players);
   return (
     <div className="absolute left-0 top-0 right-0 bottom-0 w-screen h-screen -z-1">
-      {playerPostions.map((player, i) => (
+      {players.map((player, i) => (
         <div className={`absolute ${playerPostions[i].pos}`}>
           <OtherPlayer player={player} rotation={playerPostions[i].rot} />
         </div>
