@@ -1,31 +1,35 @@
-import { useCardStackStore, useGameStore, useHandStore } from "@/state";
 import { useDndMonitor, useDroppable } from "@dnd-kit/core";
 
 import { CardCard } from "./Card";
 import { Card, CardColor } from "@/types";
 import { useAktiveCard } from "./DndContext";
 import { canBeLaidOnTop } from "@/lib/LayDownVerifier";
-import { useWebSocket } from "./WebsocketProvider";
+
 import WildCardColorDialog from "./WildCardColorDialog";
 import { memo, useState } from "react";
+import { useMutation, useQuery } from "convex/react";
+import { api } from "@/../convex/_generated/api";
+import { useGame } from "@/hooks/useGame";
+import { catchError } from "@/handelErrors";
 
 const stackSpread = 5;
 const maxNumberofVisibleCards = 5;
 
 export function LayedCardstack() {
+  const gameId = useGame();
   const { isOver, over, setNodeRef } = useDroppable({
     id: "cardStack",
     data: { type: "cardStack" },
   });
 
-  const lastCards = useCardStackStore((state) => state.lastCards) || [];
-  const visableCards = lastCards.slice(-maxNumberofVisibleCards);
-  const cardStack = useCardStackStore((state) => state.lastCards);
-  const removeCard = useHandStore((state) => state.removeCard);
-  const addLastCard = useCardStackStore((state) => state.addCardStackCard);
-  const yourId = useGameStore((state) => state.yourId);
-  const currenPlayer = useGameStore((state) => state.currentPlayer);
-  const { sendEvent } = useWebSocket();
+  const discardPile = useQuery(api.game.listdiscardPile, { gameId });
+
+  const visableDiscardPile = (discardPile ?? []).slice(
+    -maxNumberofVisibleCards
+  );
+
+  const playCard = useMutation(api.game.playCard);
+
   const { activeCard } = useAktiveCard();
 
   const [open, setOpen] = useState(false);
@@ -35,15 +39,14 @@ export function LayedCardstack() {
     onDragEnd(event) {
       const { active, over } = event;
       if (over?.id === "cardStack") {
-        if (!cardStack) return;
+        if (!discardPile) return;
         // checks if it's your turn
-        if (yourId !== currenPlayer) return;
+        //  if (currenPlayer !== active?.id) return;
 
-        const lastcard = cardStack[cardStack.length - 1];
+        const lastcard = discardPile[discardPile.length - 1];
         if (!lastcard || !activeCard) return;
         if (!canBeLaidOnTop(lastcard, activeCard)) return;
 
-        removeCard(String(active?.id));
         if (
           activeCard.type === "wild" ||
           activeCard.type === "wild-draw-four"
@@ -53,11 +56,12 @@ export function LayedCardstack() {
           return;
         }
 
-        removeCard(String(active?.id));
-        addLastCard(activeCard);
-        sendEvent("LayDown", {
-          cardId: activeCard.id,
-        });
+        catchError(
+          playCard({
+            gameId,
+            cardId: activeCard.id,
+          })
+        );
         return;
       }
     },
@@ -68,11 +72,17 @@ export function LayedCardstack() {
     if (!dialogCard) return;
     console.log("Active card:", dialogCard);
     const card = { ...dialogCard, color: color };
-    addLastCard(card);
-    sendEvent("LayDown", {
+    playCard({
+      gameId,
       cardId: card.id,
-      wildColor: color,
+      color: color,
     });
+    setOpen(false);
+    // addLastCard(card);
+    // sendEvent("LayDown", {
+    //   cardId: card.id,
+    //   wildColor: color,
+    // });
   };
 
   return (
@@ -85,12 +95,15 @@ export function LayedCardstack() {
         open={open}
         setOpen={setOpen}
       />
-      {visableCards.map((lastCard, index) => (
+      {visableDiscardPile.map((lastCard, index) => (
         <CardItem card={lastCard} index={index} />
       ))}
       {isOver &&
         activeCard &&
-        canBeLaidOnTop(visableCards[visableCards.length - 1], activeCard) && (
+        canBeLaidOnTop(
+          visableDiscardPile[visableDiscardPile.length - 1],
+          activeCard
+        ) && (
           <CardItem
             card={
               {
@@ -100,7 +113,7 @@ export function LayedCardstack() {
                 color: "black",
               } as Card
             }
-            index={visableCards.length}
+            index={visableDiscardPile.length}
           ></CardItem>
         )}
     </div>
