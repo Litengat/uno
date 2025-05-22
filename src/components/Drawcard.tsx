@@ -1,14 +1,15 @@
-import { useGame } from "@/hooks/useGame";
 import { CardBack } from "./Cardback";
-import { useMutation } from "convex/react";
-import { api } from "@/../convex/_generated/api";
-import { catchError } from "@/handelErrors";
+import { useWebSocket } from "./WebsocketProvider";
 
 export default function Drawcard() {
-  const gameId = useGame();
-  const draw = useMutation(api.game.drawCard);
+  const { sendEvent } = useWebSocket();
+
+  const handleClick = () => {
+    sendEvent("DrawCard", {});
+  };
+
   return (
-    <div onClick={() => catchError(draw({ gameId }))} className="">
+    <div onClick={handleClick} className="">
       <CardBack />
     </div>
   );

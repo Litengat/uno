@@ -4,10 +4,8 @@ import { SortableContext, useSortable } from "@dnd-kit/sortable";
 
 import { CardCard } from "./Card";
 
+import { useHandStore } from "@/state";
 import { Card } from "@/types";
-import { useGame } from "@/hooks/useGame";
-import { useQueries, useQuery } from "convex/react";
-import { api } from "@/../convex/_generated/api";
 
 const RADIUS = 360;
 const MAX_WIDTH = 360 * 1.5;
@@ -19,10 +17,8 @@ export default function Sortable() {
 
 export function Hand() {
   // initialize cards as ["0","1","2",…]
-  const gameId = useGame();
-  const cards = useQuery(api.game.getMyHand, { gameId });
-  console.log(cards);
-  if (!cards) return;
+  const cards = useHandStore((state) => state.Hand);
+
   const angleStep = cards.length === 1 ? 0 : maxAngle / (cards.length - 1);
 
   return (

@@ -1,19 +1,10 @@
-import { Id } from "convex/_generated/dataModel";
 import { CardBack } from "./Cardback";
-
+import { Player } from "@/types";
 import { Textfit } from "react-textfit";
 
 const RADIUS = 120;
 const MAX_WIDTH = 160;
 const maxAngle = 2 * Math.asin(MAX_WIDTH / (2 * RADIUS));
-
-type Player = {
-  name: string | undefined;
-  id: Id<"users"> | undefined;
-  image: string | undefined;
-  isAnonymous: boolean;
-  numberOfCards: number;
-};
 
 export default function OtherPlayer({
   player,
