@@ -12,6 +12,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+/**
+ * Displays a table of games fetched from the API.
+ *
+ * Renders a table listing each game's current player and status. The table includes a caption, header, and a footer with a fixed total amount.
+ */
 export function Games() {
   const games = useQuery(api.game.listGames) ?? [];
   console.log(games);

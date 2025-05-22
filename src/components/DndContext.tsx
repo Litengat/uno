@@ -36,6 +36,13 @@ const AktiveCardContext = createContext<AktiveCardContextType | undefined>(
   undefined
 );
 
+/**
+ * Provides drag-and-drop context for card components, managing the active dragged card and handling drag events.
+ *
+ * Wraps its children with the necessary context and DnD-kit providers to enable card dragging, overlays the dragged card under the cursor, and exposes the currently active card via context.
+ *
+ * @remark Returns nothing if the player's hand of cards is not yet loaded.
+ */
 export default function DndContextProvider({
   children,
 }: {

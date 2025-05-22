@@ -14,6 +14,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+/**
+ * Renders a sign-in form with options for email/password authentication, account creation, and anonymous sign-in.
+ *
+ * Provides UI and logic for users to sign in or sign up using their email and password, or to sign in anonymously with a chosen username. Displays appropriate form fields, handles submission state, and shows error notifications on authentication failure.
+ */
 export function SignInForm() {
   const { signIn } = useAuthActions();
   const [flow, setFlow] = useState<"signIn" | "signUp">("signIn");

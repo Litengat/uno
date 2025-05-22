@@ -7,6 +7,11 @@ import { Link } from "react-router";
 import { SignOutButton } from "./components/SignOutButton";
 import { Games } from "./components/Games";
 
+/**
+ * Renders the main application UI, displaying different content based on user authentication status.
+ *
+ * When authenticated, shows navigation links, a button to initiate a WebSocket connection, a sign-out button, and the games list. When unauthenticated, prompts the user to sign in and displays the sign-in form.
+ */
 function App() {
   return (
     <>

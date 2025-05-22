@@ -2,6 +2,11 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
+/**
+ * Renders a styled container for card UI elements.
+ *
+ * Combines base card styles with any additional classes and props, and sets a `data-slot="card"` attribute for identification.
+ */
 function Card({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -15,6 +20,11 @@ function Card({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
+/**
+ * Renders the header section of a Card component with grid layout and responsive styling.
+ *
+ * Applies specific grid and spacing classes, and conditionally adjusts layout if a card action is present. Additional props are spread onto the root div.
+ */
 function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -28,6 +38,11 @@ function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
+/**
+ * Renders the title section of a card with emphasized styling.
+ *
+ * Displays its children inside a div with bold font and compact line height, suitable for use as a card title.
+ */
 function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -38,6 +53,11 @@ function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
+/**
+ * Renders a styled container for a card's description text.
+ *
+ * Applies muted foreground color and smaller font size to its content. Additional classes and div props can be provided.
+ */
 function CardDescription({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -48,6 +68,11 @@ function CardDescription({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
+/**
+ * Renders a styled container for action elements within a card header.
+ *
+ * Positions its content in the top-right area of the card header grid layout.
+ */
 function CardAction({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -61,6 +86,11 @@ function CardAction({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
+/**
+ * Renders the main content area of a card with horizontal padding.
+ *
+ * Additional props are spread onto the root div element.
+ */
 function CardContent({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -71,6 +101,11 @@ function CardContent({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
+/**
+ * Renders the footer section of a Card component with horizontal padding and vertical centering.
+ *
+ * Additional classes can be merged via the {@link className} prop. Applies extra top padding if a top border is present.
+ */
 function CardFooter({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
