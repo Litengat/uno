@@ -1,9 +1,8 @@
 import z from "zod";
-import { EventObject } from "../EventManager";
 import { playersTable } from "~/db/schema";
-
 import { updatePlayers } from "../sendEvents";
 import { count } from "drizzle-orm";
+import { GameRoom } from "~/GameRoom";
 
 const JoinEventSchema = z.object({
   type: z.literal("Join"),
@@ -11,35 +10,24 @@ const JoinEventSchema = z.object({
   name: z.string(),
 });
 
-export const JoinEvent: EventObject<typeof JoinEventSchema> = {
-  type: "Join",
-  schema: JoinEventSchema,
-  func: async (event, GameRoom) => {
-    const position = GameRoom.db
-      .select({ count: count() })
-      .from(playersTable)
-      .get()?.count;
-    console.log("Position", position);
-    GameRoom.db
-      .insert(playersTable)
-      .values({
-        id: event.playerid,
-        name: event.name,
-        position: position ?? 0,
-      })
-      .run();
-    GameRoom.sendPlayerEvent(event.playerid, "YourID", {
-      playerId: event.playerid,
-    });
-    updatePlayers(GameRoom);
-    // Array.from({ length: 7 }).forEach(() => {
-    //   sendDrawCardEvent(event.playerid, GameRoom);
-    // });
-    // updatePlayers(GameRoom);
+export type JoinEvent = z.infer<typeof JoinEventSchema>;
 
-    // GameRoom.sendEvent("CardLaidDown", {
-    //   playerId: event.playerid,
-    //   card: getRandomCard(),
-    // });
-  },
-};
+export async function handleJoin(event: JoinEvent, GameRoom: GameRoom) {
+  const position = GameRoom.db
+    .select({ count: count() })
+    .from(playersTable)
+    .get()?.count;
+  console.log("Position", position);
+  GameRoom.db
+    .insert(playersTable)
+    .values({
+      id: event.playerid,
+      name: event.name,
+      position: position ?? 0,
+    })
+    .run();
+  GameRoom.sendPlayerEvent(event.playerid, "YourID", {
+    playerId: event.playerid,
+  });
+  updatePlayers(GameRoom);
+}

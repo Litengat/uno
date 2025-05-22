@@ -7,7 +7,7 @@ import React, {
 } from "react";
 import { safeJsonParse } from "@/lib/utils";
 import { EventMap } from "@/events/sendEvents";
-import { eventManager } from "@/events/events";
+import { handleEvent } from "@/events/events";
 type WebSocketContextType = {
   sendEvent: <K extends keyof EventMap>(
     eventName: K,
@@ -51,11 +51,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
         console.error("Error parsing event", parsed.error);
         return;
       }
-      const result = eventManager.run(parsed.value);
-
-      if (result.isErr()) {
-        console.error("Error running event", result.error);
-      }
+      const result = handleEvent(parsed.value);
     }),
       (socketRef.current.onclose = () => {
         console.log("WebSocket disconnected");

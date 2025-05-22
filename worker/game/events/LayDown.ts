@@ -1,5 +1,4 @@
 import { cardsTable, gameTable, playersTable } from "~/db/schema";
-import { EventObject } from "../EventManager";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
 import { CardStackID, GameRoom } from "~/GameRoom";
@@ -14,87 +13,77 @@ const LayDownEventSchema = z.object({
   wildColor: CardColorSchema.optional(),
 });
 
-export const LayDownEvent: EventObject<typeof LayDownEventSchema> = {
-  type: "LayDown",
-  schema: LayDownEventSchema,
-  func: async (event, GameRoom) => {
-    const card = (
-      await GameRoom.db
-        .select()
-        .from(cardsTable)
-        .where(
-          and(
-            eq(cardsTable.id, event.cardId),
-            eq(cardsTable.holder, event.playerid)
-          )
+export type LayDownEvent = z.infer<typeof LayDownEventSchema>;
+
+export async function handleLayDown(event: LayDownEvent, GameRoom: GameRoom) {
+  const card = (
+    await GameRoom.db
+      .select()
+      .from(cardsTable)
+      .where(
+        and(
+          eq(cardsTable.id, event.cardId),
+          eq(cardsTable.holder, event.playerid)
         )
-        .limit(1)
-    )[0] as Card;
+      )
+      .limit(1)
+  )[0] as Card;
 
-    if (!card) {
-      console.error("Card not found");
-      return;
-    }
-    card.color = event.wildColor ?? card.color;
-    GameRoom.db
-      .update(cardsTable)
-      .set({ holder: CardStackID, color: event.wildColor })
-      .where(eq(cardsTable.id, card.id))
-      .run();
-
-    switch (card.type) {
-      case "reverse":
-        await reverse(GameRoom);
-        break;
-      case "draw-two":
-        nextPlayerDraw(GameRoom, 2);
-        break;
-      case "wild-draw-four":
-        nextPlayerDraw(GameRoom, 4);
-        break;
-      case "skip":
-        const nextIndex = await getNextPlayerIndex(GameRoom);
-        if (nextIndex !== undefined) {
-          console.error("next index dosen't exists");
-          return;
-        }
-        updateCurrentPosition(GameRoom, nextIndex);
-        break;
-    }
-
-    // send Card laid down Event
-    console.log("Card laid down", card);
-    GameRoom.sendEvent("CardLaidDown", {
-      playerId: event.playerid,
-      card: card,
-    });
-
-    const nextIndex = await getNextPlayerIndex(GameRoom);
-
-    console.log("nextIndex", nextIndex);
-    if (nextIndex === undefined) {
-      console.error("next index dosen't exists");
-      return;
-    }
-
-    const nextPlayer = await getPlayerbyPositon(GameRoom, nextIndex);
-
-    updateCurrentPosition(GameRoom, nextIndex);
-    // console.log("Next player", nextPlayer);
-    // if (!nextPlayer) {
-    //   console.error("Next player not found, but this should not happen");
-    //   return;
-    // }
-
-    // const players = await GameRoom.db.select().from(playersTable).all();
-    // console.log(players);
-
-    GameRoom.sendEvent("NextTurn", {
-      playerId: nextPlayer.id,
-    });
+  if (!card) {
+    console.error("Card not found");
     return;
-  },
-};
+  }
+  card.color = event.wildColor ?? card.color;
+  GameRoom.db
+    .update(cardsTable)
+    .set({ holder: CardStackID, color: event.wildColor })
+    .where(eq(cardsTable.id, card.id))
+    .run();
+
+  switch (card.type) {
+    case "reverse":
+      await reverse(GameRoom);
+      break;
+    case "draw-two":
+      nextPlayerDraw(GameRoom, 2);
+      break;
+    case "wild-draw-four":
+      nextPlayerDraw(GameRoom, 4);
+      break;
+    case "skip":
+      const nextIndex = await getNextPlayerIndex(GameRoom);
+      if (nextIndex !== undefined) {
+        console.error("next index dosen't exists");
+        return;
+      }
+      updateCurrentPosition(GameRoom, nextIndex);
+      break;
+  }
+
+  // send Card laid down Event
+  console.log("Card laid down", card);
+  GameRoom.sendEvent("CardLaidDown", {
+    playerId: event.playerid,
+    card: card,
+  });
+
+  const nextIndex = await getNextPlayerIndex(GameRoom);
+
+  console.log("nextIndex", nextIndex);
+  if (nextIndex === undefined) {
+    console.error("next index dosen't exists");
+    return;
+  }
+
+  const nextPlayer = await getPlayerbyPositon(GameRoom, nextIndex);
+
+  updateCurrentPosition(GameRoom, nextIndex);
+
+  GameRoom.sendEvent("NextTurn", {
+    playerId: nextPlayer.id,
+  });
+  return;
+}
 
 async function reverse(GameRoom: GameRoom) {
   const game = await GameRoom.getGame();

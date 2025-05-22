@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { Eventmanager } from "./EventManager";
 import {
   useCardStackStore,
   useGameStore,
@@ -16,70 +15,120 @@ const updatePlayerCards = usePlayerStore.getState().updatePlayerCards;
 const setYourId = useGameStore.getState().setYourId;
 const setCurrentPlayer = useGameStore.getState().setCurrentPlayer;
 
-export const eventManager = new Eventmanager();
-
-eventManager.register({
-  type: "UpdatePlayers",
-  schema: z.object({
-    players: z.array(PlayerSchema),
-  }),
-  func: (event) => {
-    setPlayers(event.players);
-  },
+// Define event schemas
+const UpdatePlayersSchema = z.object({
+  type: z.literal("UpdatePlayers"),
+  players: z.array(PlayerSchema),
 });
 
-eventManager.register({
-  type: "CardDrawn",
-  schema: z.object({
-    type: z.literal("CardDrawn"),
-    card: CardSchema,
-  }),
-  func: (event) => {
-    addCard(event.card);
-  },
+const CardDrawnSchema = z.object({
+  type: z.literal("CardDrawn"),
+  card: CardSchema,
 });
 
-eventManager.register({
-  type: "CardLaidDown",
-  schema: z.object({
-    type: z.literal("CardLaidDown"),
-    playerId: z.string(),
-    card: CardSchema,
-  }),
-  func: (event) => {
-    addCardStackCard(event.card);
-    decreaseplayerCards(event.playerId);
-  },
-});
-eventManager.register({
-  type: "UpdateCardCount",
-  schema: z.object({
-    type: z.literal("UpdateCardCount"),
-    playerId: z.string(),
-    numberOfCards: z.number(),
-  }),
-  func: (event) => {
-    updatePlayerCards(event.playerId, event.numberOfCards);
-  },
+const CardLaidDownSchema = z.object({
+  type: z.literal("CardLaidDown"),
+  playerId: z.string(),
+  card: CardSchema,
 });
 
-eventManager.register({
-  type: "YourID",
-  schema: z.object({
-    type: z.literal("YourID"),
-    playerId: z.string(),
-  }),
-  func: (event) => {
-    setYourId(event.playerId);
-  },
+const UpdateCardCountSchema = z.object({
+  type: z.literal("UpdateCardCount"),
+  playerId: z.string(),
+  numberOfCards: z.number(),
 });
-eventManager.register({
-  type: "NextTurn",
-  schema: z.object({
-    type: z.literal("NextTurn"),
-    playerId: z.string(),
-  }),
-  func: (event) => {
-    setCurrentPlayer(event.playerId);
-  },
+
+const YourIDSchema = z.object({
+  type: z.literal("YourID"),
+  playerId: z.string(),
 });
+
+const NextTurnSchema = z.object({
+  type: z.literal("NextTurn"),
+  playerId: z.string(),
+});
+
+// Union type of all possible events
+export type Event = z.infer<
+  | typeof UpdatePlayersSchema
+  | typeof CardDrawnSchema
+  | typeof CardLaidDownSchema
+  | typeof UpdateCardCountSchema
+  | typeof YourIDSchema
+  | typeof NextTurnSchema
+>;
+
+export function handleEvent(event: unknown) {
+  // First validate the basic event structure
+  const baseEvent = z.object({ type: z.string() }).safeParse(event);
+  if (!baseEvent.success) {
+    console.error("Invalid event structure:", baseEvent.error);
+    return;
+  }
+
+  switch (baseEvent.data.type) {
+    case "UpdatePlayers": {
+      const parsed = UpdatePlayersSchema.safeParse(event);
+      if (!parsed.success) {
+        console.error("UpdatePlayers event data is invalid:", parsed.error);
+        return;
+      }
+      setPlayers(parsed.data.players);
+      break;
+    }
+
+    case "CardDrawn": {
+      const parsed = CardDrawnSchema.safeParse(event);
+      if (!parsed.success) {
+        console.error("CardDrawn event data is invalid:", parsed.error);
+        return;
+      }
+      addCard(parsed.data.card);
+      break;
+    }
+
+    case "CardLaidDown": {
+      const parsed = CardLaidDownSchema.safeParse(event);
+      if (!parsed.success) {
+        console.error("CardLaidDown event data is invalid:", parsed.error);
+        return;
+      }
+      addCardStackCard(parsed.data.card);
+      decreaseplayerCards(parsed.data.playerId);
+      break;
+    }
+
+    case "UpdateCardCount": {
+      const parsed = UpdateCardCountSchema.safeParse(event);
+      if (!parsed.success) {
+        console.error("UpdateCardCount event data is invalid:", parsed.error);
+        return;
+      }
+      updatePlayerCards(parsed.data.playerId, parsed.data.numberOfCards);
+      break;
+    }
+
+    case "YourID": {
+      const parsed = YourIDSchema.safeParse(event);
+      if (!parsed.success) {
+        console.error("YourID event data is invalid:", parsed.error);
+        return;
+      }
+      setYourId(parsed.data.playerId);
+      break;
+    }
+
+    case "NextTurn": {
+      const parsed = NextTurnSchema.safeParse(event);
+      if (!parsed.success) {
+        console.error("NextTurn event data is invalid:", parsed.error);
+        return;
+      }
+      setCurrentPlayer(parsed.data.playerId);
+      break;
+    }
+
+    default:
+      console.error(`Unknown event type: ${baseEvent.data.type}`);
+  }
+}

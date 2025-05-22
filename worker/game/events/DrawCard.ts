@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { EventObject } from "../EventManager";
 import { Card } from "~/types";
 import { GameRoom } from "~/GameRoom";
 import { cardsTable } from "~/db/schema";
@@ -10,13 +9,11 @@ const DrawCardSchema = z.object({
   playerid: z.string(),
 });
 
-export const DrawCardEvent: EventObject<typeof DrawCardSchema> = {
-  type: "DrawCard",
-  schema: DrawCardSchema,
-  func: (event, GameRoom) => {
-    sendDrawCardEvent(event.playerid, GameRoom);
-  },
-};
+export type DrawCardEvent = z.infer<typeof DrawCardSchema>;
+
+export function handleDrawCard(event: DrawCardEvent, GameRoom: GameRoom) {
+  sendDrawCardEvent(event.playerid, GameRoom);
+}
 
 export async function sendDrawCardEvent(playerid: string, GameRoom: GameRoom) {
   const card = getRandomCard();

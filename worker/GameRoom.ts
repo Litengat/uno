@@ -1,9 +1,8 @@
 import { DurableObject } from "cloudflare:workers";
 import { Env } from ".";
-import { events } from "./game/events";
+
 import { Attachment } from "./types";
 import { safeJsonParse, sendError } from "./utills";
-import { Eventmanager } from "~/game/EventManager";
 import {
   drizzle,
   type DrizzleSqliteDODatabase,
@@ -14,6 +13,7 @@ import migrations from "../drizzle/migrations.js";
 import { EventMap } from "./game/sendEvents.js";
 import { gameTable, playersTable } from "./db/schema.js";
 import { eq } from "drizzle-orm";
+import { handleGameEvent } from "./game/eventHandler.js";
 
 export const CardStackID = "cardStack";
 
@@ -22,13 +22,11 @@ export const GameID = 0;
 export class GameRoom extends DurableObject {
   sessions: Map<string, WebSocket> = new Map();
 
-  eventManager = new Eventmanager(this);
   db: DrizzleSqliteDODatabase;
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
     // create all events
-    events(this.eventManager);
     this.db = drizzle(ctx.storage);
     this.sessions = new Map();
     ctx.getWebSockets().forEach((ws) => {
@@ -104,14 +102,7 @@ export class GameRoom extends DurableObject {
       typeof message === "string" ? message : new TextDecoder().decode(message)
     );
 
-    if (parsedMessage.isErr()) {
-      sendError(ws, parsedMessage.error);
-      return;
-    }
-    const err = this.eventManager.run({
-      playerid: meta.id,
-      ...parsedMessage.value,
-    });
+    handleGameEvent(parsedMessage, this);
   }
 
   async webSocketOpen(ws: WebSocket) {
