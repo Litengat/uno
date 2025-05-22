@@ -1,3 +1,5 @@
+import { useHandStore } from "@/state";
+
 import { createContext, ReactNode, useContext, useState } from "react";
 import {
   DndContext,
@@ -16,9 +18,6 @@ import { CardCard } from "./Card";
 import { DroppableContainer, RectMap } from "@dnd-kit/core/dist/store";
 import { Coordinates } from "@dnd-kit/utilities";
 import { Card } from "@/types";
-import { useGame } from "@/hooks/useGame";
-import { useQuery } from "convex/react";
-import { api } from "@/../convex/_generated/api";
 
 type AktiveCardContextType = {
   activeCard: Card | null;
@@ -41,16 +40,15 @@ export default function DndContextProvider({
 }: {
   children: ReactNode;
 }) {
-  const gameId = useGame();
-  const cards = useQuery(api.game.getMyHand, { gameId });
+  const cards = useHandStore((state) => state.Hand);
+  const setCards = useHandStore((state) => state.setHand);
 
   const [activeCard, setActiveCard] = useState<Card | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor));
-  if (!cards) return;
+
   function handleDragStart(event: DragStartEvent) {
     // setCards((cards) => cards.filter((card) => card !== event.active.id));
-    if (!cards) return;
     const card = cards.find((card) => card.id === event.active.id) ?? null;
     if (!card) return;
     setActiveCard(card);
@@ -64,7 +62,7 @@ export default function DndContextProvider({
         cards.findIndex((card) => card.id === active.id),
         cards.findIndex((card) => card.id === over.id)
       );
-      // setCards(newCards);
+      setCards(newCards);
     }
   };
 
