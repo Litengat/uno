@@ -1,7 +1,8 @@
 import { z } from "zod";
+import { PlayerId } from "./db/player";
 
 export type Attachment = {
-  id: string;
+  id: PlayerId;
 };
 
 export const CardTypeSchema = z.enum([

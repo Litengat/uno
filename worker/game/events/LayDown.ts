@@ -5,8 +5,9 @@ import { CardStackID, GameRoom } from "~/GameRoom";
 import { Card, CardColorSchema } from "~/types";
 import { getNextPlayerIndex, getPlayer, getPlayerbyPositon } from "../players";
 import { sendDrawCardEvent } from "./DrawCard";
+import { PlayerId } from "~/db/player";
 
-const LayDownEventSchema = z.object({
+export const LayDownEventSchema = z.object({
   type: z.literal("LayDown"),
   playerid: z.string(),
   cardId: z.string(),
@@ -101,7 +102,7 @@ async function nextPlayerDraw(GameRoom: GameRoom, amount: number) {
   console.log("next Index in draw", nextIndex);
   const nextPlayer = await getPlayerbyPositon(GameRoom, nextIndex);
   Array.from({ length: amount }).map(() => {
-    sendDrawCardEvent(nextPlayer.id, GameRoom);
+    sendDrawCardEvent(nextPlayer.id as PlayerId, GameRoom);
   });
 }
 

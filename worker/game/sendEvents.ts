@@ -1,10 +1,8 @@
-import { Card, Player } from "~/types/Card";
-import { GameRoom } from "~/GameRoom";
-import { cardsTable, playersTable } from "~/db/schema";
-import { count, eq } from "drizzle-orm";
+import { OtherPlayer } from "~/db/player";
+import { Card } from "~/db/game";
 // 1. Define event types and payloads
 export type EventMap = {
-  UpdatePlayers: { players: Player[] };
+  UpdatePlayers: { players: OtherPlayer[] };
   PlayerLeft: { playerId: string };
   CardDrawn: { card: Card };
   CardLaidDown: { playerId: string; card: Card };
@@ -14,19 +12,19 @@ export type EventMap = {
   NextTurn: { playerId: string };
 };
 
-export function updatePlayers(GameRoom: GameRoom) {
-  const players = GameRoom.db.select().from(playersTable).all();
-  GameRoom.sendEvent("UpdatePlayers", {
-    players: players.map((player) => {
-      const result = GameRoom.db
-        .select({ count: count() })
-        .from(cardsTable)
-        .where(eq(cardsTable.holder, player.id))
-        .get();
-      return {
-        ...player,
-        numberOfCards: result?.count ?? 0,
-      };
-    }),
-  });
-}
+// export function updatePlayers(GameRoom: GameRoom) {
+//   const players = GameRoom.db.select().from(playersTable).all();
+//   GameRoom.sendEvent("UpdatePlayers", {
+//     players: players.map((player) => {
+//       const result = GameRoom.db
+//         .select({ count: count() })
+//         .from(cardsTable)
+//         .where(eq(cardsTable.holder, player.id))
+//         .get();
+//       return {
+//         ...player,
+//         numberOfCards: result?.count ?? 0,
+//       };
+//     }),
+//   });
+// }

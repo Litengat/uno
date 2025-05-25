@@ -14,20 +14,23 @@ import { EventMap } from "./game/sendEvents.js";
 import { gameTable, playersTable } from "./db/schema.js";
 import { eq } from "drizzle-orm";
 import { handleGameEvent } from "./game/eventHandler.js";
+import { createGame } from "./db/game.js";
+import { addPlayer, PlayerId } from "./db/player.js";
 
 export const CardStackID = "cardStack";
 
 export const GameID = 0;
 
 export class GameRoom extends DurableObject {
-  sessions: Map<string, WebSocket> = new Map();
+  sessions: Map<PlayerId, WebSocket> = new Map();
 
   db: DrizzleSqliteDODatabase;
-
+  storage: DurableObjectStorage;
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
     // create all events
     this.db = drizzle(ctx.storage);
+    this.storage = ctx.storage;
     this.sessions = new Map();
     ctx.getWebSockets().forEach((ws) => {
       const meta = ws.deserializeAttachment() as Attachment | undefined;
@@ -36,22 +39,7 @@ export class GameRoom extends DurableObject {
       }
       this.sessions.set(meta.id, ws);
     });
-    ctx.blockConcurrencyWhile(async () => {
-      await this._migrate();
-    });
-    ctx.blockConcurrencyWhile(async () => {
-      await this.db
-        .insert(gameTable)
-        .values({
-          id: GameID,
-        })
-        .onConflictDoNothing()
-        .run();
-    });
-  }
-
-  async _migrate() {
-    migrate(this.db, migrations);
+    ctx.blockConcurrencyWhile(async () => await createGame(ctx.storage));
   }
 
   async fetch(_request: Request): Promise<Response> {
@@ -72,16 +60,17 @@ export class GameRoom extends DurableObject {
 
     this.ctx.acceptWebSocket(server);
 
-    const id = crypto.randomUUID();
+    const playerId: PlayerId = `player-${crypto.randomUUID()}`;
     // The `serializeAttachment()` method is used to attach metadata to the WebSocket connection.
     server.serializeAttachment({
-      id: id,
+      id: playerId,
       name: undefined,
     } as Attachment);
 
     // adding the player to the players map
-    this.sessions.set(id, server);
+    this.sessions.set(playerId, server);
 
+    await addPlayer(this.storage, playerId);
     return new Response(null, {
       status: 101,
       webSocket: client,
@@ -101,8 +90,9 @@ export class GameRoom extends DurableObject {
     const parsedMessage = safeJsonParse(
       typeof message === "string" ? message : new TextDecoder().decode(message)
     );
+    if (parsedMessage.isErr()) return;
 
-    handleGameEvent(parsedMessage, this);
+    handleGameEvent(parsedMessage.value, this);
   }
 
   async webSocketOpen(ws: WebSocket) {
@@ -148,7 +138,7 @@ export class GameRoom extends DurableObject {
   }
 
   sendPlayerEvent<K extends keyof EventMap>(
-    playerId: string,
+    playerId: PlayerId,
     eventName: K,
     payload: EventMap[K]
   ) {
