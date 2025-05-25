@@ -2,17 +2,18 @@ import { Button } from "./components/ui/button";
 // import { unstable_ViewTransition as ViewTransition } from "react";
 
 import { Link } from "react-router";
+import Index from "./lobby/Index";
 
 function App() {
   return (
     <>
-      <Link to="/cardtest">Card </Link>
+      {/* <Link to="/cardtest">Card </Link>
 
       <Button onClick={websocket} variant="default">
         Websocket
       </Button>
-      <Link to="/create">Create Game</Link>
-
+      <Link to="/create">Create Game</Link> */}
+      <Index />
       {/* <ViewTransition name="test">
         <CardBack />
       </ViewTransition> */}
