@@ -13,13 +13,14 @@ export function getPlayer(storage: DurableObjectStorage, id: PlayerId) {
   return storage.get<Player>(id);
 }
 
-export async function addPlayer(storage: DurableObjectStorage, id: PlayerId) {
+export async function addPlayer(
+  storage: DurableObjectStorage,
+  playerId: PlayerId
+) {
   const game = await getGame(storage);
   if (!game) {
     throw new Error("Game not found2");
   }
-
-  const playerId: PlayerId = `player-${id}`;
 
   const player: Player = {
     id: playerId,
@@ -39,6 +40,7 @@ export async function setName(
   name: string
 ) {
   const player = await getPlayer(storage, id);
+  console.log(player);
   if (!player) return err("Player don't exists");
   player.name = name;
   storage.put(player.id, player);

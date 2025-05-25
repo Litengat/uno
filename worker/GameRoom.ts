@@ -91,8 +91,9 @@ export class GameRoom extends DurableObject {
       typeof message === "string" ? message : new TextDecoder().decode(message)
     );
     if (parsedMessage.isErr()) return;
+    const xmessage = { ...parsedMessage.value, playerId: meta.id };
 
-    handleGameEvent(parsedMessage.value, this);
+    handleGameEvent(xmessage, this);
   }
 
   async webSocketOpen(ws: WebSocket) {
@@ -146,6 +147,7 @@ export class GameRoom extends DurableObject {
       type: eventName,
       ...payload,
     };
+    console.log(`Broadcasting message to ${playerId}:`, JSON.stringify(event));
     this.sessions.get(playerId)?.send(JSON.stringify(event));
   }
 

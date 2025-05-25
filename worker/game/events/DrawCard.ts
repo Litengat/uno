@@ -8,13 +8,13 @@ import { addCardToPlayer, PlayerId, getPlayer } from "~/db/player";
 
 const DrawCardSchema = z.object({
   type: z.literal("DrawCard"),
-  playerid: z.string(),
+  playerId: z.string(),
 });
 
 export type DrawCardEvent = z.infer<typeof DrawCardSchema>;
 
 export function handleDrawCard(event: DrawCardEvent, GameRoom: GameRoom) {
-  sendDrawCardEvent(event.playerid as PlayerId, GameRoom);
+  sendDrawCardEvent(event.playerId as PlayerId, GameRoom);
 }
 
 export async function sendDrawCardEvent(

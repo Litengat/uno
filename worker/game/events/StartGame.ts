@@ -7,7 +7,7 @@ import { discardCard, getGame, getTopCard } from "~/db/game";
 
 const StartGameEventSchema = z.object({
   type: z.literal("StartGame"),
-  playerid: z.string(),
+  playerId: z.string(),
 });
 
 export type StartGameEvent = z.infer<typeof StartGameEventSchema>;
@@ -45,7 +45,7 @@ export async function handleStartGame(
   discardCard(GameRoom, card);
 
   GameRoom.sendEvent("CardLaidDown", {
-    playerId: event.playerid,
+    playerId: event.playerId,
     card: card,
   });
   GameRoom.sendEvent("NextTurn", {

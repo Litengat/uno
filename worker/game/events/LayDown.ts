@@ -9,7 +9,7 @@ import { PlayerId } from "~/db/player";
 
 export const LayDownEventSchema = z.object({
   type: z.literal("LayDown"),
-  playerid: z.string(),
+  playerId: z.string(),
   cardId: z.string(),
   wildColor: CardColorSchema.optional(),
 });
@@ -24,7 +24,7 @@ export async function handleLayDown(event: LayDownEvent, GameRoom: GameRoom) {
       .where(
         and(
           eq(cardsTable.id, event.cardId),
-          eq(cardsTable.holder, event.playerid)
+          eq(cardsTable.holder, event.playerId)
         )
       )
       .limit(1)
@@ -64,7 +64,7 @@ export async function handleLayDown(event: LayDownEvent, GameRoom: GameRoom) {
   // send Card laid down Event
   console.log("Card laid down", card);
   GameRoom.sendEvent("CardLaidDown", {
-    playerId: event.playerid,
+    playerId: event.playerId,
     card: card,
   });
 

@@ -44,7 +44,6 @@ export async function createGame(storage: DurableObjectStorage) {
     gameStatus: "waiting" as GameStatus,
   };
   await storage.put(GameID, game);
-  console.log(await storage.get(GameID));
 }
 
 function createDeck(): Card[] {
@@ -129,4 +128,14 @@ export async function addPLayerId(storage: DurableObjectStorage, id: PlayerId) {
   const game = await getGame(storage);
   game?.players.push(id);
   storage.put(GameID, game);
+}
+
+export async function removePlayer(GameRoom: GameRoom, playerId: PlayerId) {
+  const game = await getGame(GameRoom.storage);
+  if (game) {
+    game.players = game.players.filter((p) => p !== playerId);
+    GameRoom.storage.put(GameID, game);
+  }
+  GameRoom.storage.put(GameID, game);
+  GameRoom.storage.delete(playerId);
 }
