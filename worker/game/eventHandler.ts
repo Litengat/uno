@@ -11,6 +11,7 @@ export async function handleGameEvent(event: unknown, GameRoom: GameRoom) {
   // First validate the basic event structure
   const baseEvent = z.object({ type: z.string() }).safeParse(event);
   if (!baseEvent.success) {
+    console.log(event);
     console.error("Invalid event structure:", baseEvent.error);
     return;
   }

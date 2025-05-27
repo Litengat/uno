@@ -14,7 +14,7 @@ export async function getNextPlayerIndex(GameRoom: GameRoom) {
     return 0;
   }
   if (nextIndex < 0) {
-    console.log("smaller 0");
+    console.log("smaller then 0");
     return players.length - 1;
   }
   return nextIndex;

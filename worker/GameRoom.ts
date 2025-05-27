@@ -14,20 +14,33 @@ import { EventMap } from "./game/sendEvents.js";
 import { gameTable, playersTable } from "./db/schema.js";
 import { eq } from "drizzle-orm";
 import { handleGameEvent } from "./game/eventHandler.js";
+import { createGame } from "./db/game.js";
+import {
+  addPlayer,
+  PlayerId,
+  removePlayer,
+  updatePlayers,
+} from "./db/player.js";
+import { connect } from "./game/events/Connect.js";
 
 export const CardStackID = "cardStack";
 
 export const GameID = 0;
 
 export class GameRoom extends DurableObject {
-  sessions: Map<string, WebSocket> = new Map();
+  sessions: Map<PlayerId, WebSocket> = new Map();
 
   db: DrizzleSqliteDODatabase;
-
+  storage: DurableObjectStorage;
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
+    console.log("Created...");
+    ctx.storage.list().then((c) => {
+      console.log(c);
+    });
     // create all events
     this.db = drizzle(ctx.storage);
+    this.storage = ctx.storage;
     this.sessions = new Map();
     ctx.getWebSockets().forEach((ws) => {
       const meta = ws.deserializeAttachment() as Attachment | undefined;
@@ -36,22 +49,7 @@ export class GameRoom extends DurableObject {
       }
       this.sessions.set(meta.id, ws);
     });
-    ctx.blockConcurrencyWhile(async () => {
-      await this._migrate();
-    });
-    ctx.blockConcurrencyWhile(async () => {
-      await this.db
-        .insert(gameTable)
-        .values({
-          id: GameID,
-        })
-        .onConflictDoNothing()
-        .run();
-    });
-  }
-
-  async _migrate() {
-    migrate(this.db, migrations);
+    ctx.blockConcurrencyWhile(async () => await createGame(ctx.storage));
   }
 
   async fetch(_request: Request): Promise<Response> {
@@ -72,16 +70,17 @@ export class GameRoom extends DurableObject {
 
     this.ctx.acceptWebSocket(server);
 
-    const id = crypto.randomUUID();
+    const playerId: PlayerId = `player-${crypto.randomUUID()}`;
     // The `serializeAttachment()` method is used to attach metadata to the WebSocket connection.
     server.serializeAttachment({
-      id: id,
+      id: playerId,
       name: undefined,
     } as Attachment);
 
     // adding the player to the players map
-    this.sessions.set(id, server);
+    this.sessions.set(playerId, server);
 
+    await connect(this, playerId);
     return new Response(null, {
       status: 101,
       webSocket: client,
@@ -101,8 +100,10 @@ export class GameRoom extends DurableObject {
     const parsedMessage = safeJsonParse(
       typeof message === "string" ? message : new TextDecoder().decode(message)
     );
+    if (parsedMessage.isErr()) return;
+    const xmessage = { ...parsedMessage.value, playerId: meta.id };
 
-    handleGameEvent(parsedMessage, this);
+    handleGameEvent(xmessage, this);
   }
 
   async webSocketOpen(ws: WebSocket) {
@@ -114,6 +115,7 @@ export class GameRoom extends DurableObject {
     }
     this.sessions.set(meta.id, ws);
   }
+
   async webSocketClose(
     ws: WebSocket,
     code: number,
@@ -127,8 +129,9 @@ export class GameRoom extends DurableObject {
       sendError(ws, "Invalid attachment");
       return;
     }
+    console.log(`Websocket ${meta.id} got closed`);
+    await removePlayer(this, meta.id);
     this.sessions.delete(meta.id);
-    this.db.delete(playersTable).where(eq(playersTable.id, meta.id)).run();
   }
 
   // send a message to all players
@@ -148,7 +151,7 @@ export class GameRoom extends DurableObject {
   }
 
   sendPlayerEvent<K extends keyof EventMap>(
-    playerId: string,
+    playerId: PlayerId,
     eventName: K,
     payload: EventMap[K]
   ) {
@@ -156,6 +159,7 @@ export class GameRoom extends DurableObject {
       type: eventName,
       ...payload,
     };
+    console.log(`Broadcasting message to ${playerId}:`, JSON.stringify(event));
     this.sessions.get(playerId)?.send(JSON.stringify(event));
   }
 

@@ -86,7 +86,7 @@ export function LayedCardstack() {
         setOpen={setOpen}
       />
       {visableCards.map((lastCard, index) => (
-        <CardItem card={lastCard} index={index} />
+        <CardItem key={lastCard.id} card={lastCard} index={index} />
       ))}
       {isOver &&
         activeCard &&
