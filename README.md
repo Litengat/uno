@@ -28,6 +28,14 @@ A real-time multiplayer UNO card game built with React, TypeScript, and Cloudfla
 - **Ranked**: Competitive matches with skill-based matchmaking
 - **Tournament**: Multi-round elimination tournaments
 
+### My Goal
+- building an am with pure React and without Next.js
+- building with cloudflare Workers
+- dealing with Websockets
+- To learn
+- My goal wasn't to build the best uno game in the shortes amount of time, then ai would do everything. My goal was it to build an app and doing as much, i can on my own to make the experienve
+
+
 ## 🚀 Tech Stack
 
 ### Frontend
@@ -222,24 +230,20 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ### Current Known Issues
 
-- Game state occasionally desyncs during rapid play
-- Mobile drag-and-drop needs optimization
-- Tournament mode needs additional testing
+- Please tell me
 
 ### Roadmap
 
 - [ ] Mobile app version
 - [ ] Spectator mode
 - [ ] Custom game rules (house rules)
-- [ ] Voice chat integration
 - [ ] Advanced tournament brackets
 - [ ] Player achievements and badges
 - [ ] Custom card themes
 
 ## 🙏 Acknowledgments
 
-- UNO card game by Mattel
-- Cloudflare Workers team for excellent platform
+- UNO card game by Litengut
 - Open source community for amazing libraries
 - Contributors and testers
 
@@ -250,4 +254,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Ready to play?** Start the development server and challenge your friends to a game of UNO! 🎴✨
+**Ready to play?** Go on [uno.litengut.dev](uno.litnegut) and challenge your friends to a game of UNO! 🎴✨
