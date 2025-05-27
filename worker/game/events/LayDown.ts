@@ -3,87 +3,93 @@ import { eq, and } from "drizzle-orm";
 import { z } from "zod";
 import { CardStackID, GameRoom } from "~/GameRoom";
 import { Card, CardColorSchema } from "~/types";
-import { getNextPlayerIndex, getPlayer, getPlayerbyPositon } from "../players";
+
 import { sendDrawCardEvent } from "./DrawCard";
-import { PlayerId } from "~/db/player";
+import {
+  getPlayer,
+  getPlayerCard,
+  PlayerId,
+  UpdateNextPlayer,
+  PlayerIdSchema,
+  getNextPlayer,
+} from "~/db/player";
+import { canBeLaidOnTop, CardIdSchema } from "~/db/card";
+import { discardCard, getGame, NextTurn } from "~/db/game";
+import { getNextPlayerIndex } from "../players";
 
 export const LayDownEventSchema = z.object({
   type: z.literal("LayDown"),
-  playerId: z.string(),
-  cardId: z.string(),
+  playerId: PlayerIdSchema,
+  cardId: CardIdSchema,
   wildColor: CardColorSchema.optional(),
 });
 
 export type LayDownEvent = z.infer<typeof LayDownEventSchema>;
 
 export async function handleLayDown(event: LayDownEvent, GameRoom: GameRoom) {
-  const card = (
-    await GameRoom.db
-      .select()
-      .from(cardsTable)
-      .where(
-        and(
-          eq(cardsTable.id, event.cardId),
-          eq(cardsTable.holder, event.playerId)
-        )
-      )
-      .limit(1)
-  )[0] as Card;
-
-  if (!card) {
-    console.error("Card not found");
+  const game = await getGame(GameRoom.storage);
+  if (!game) {
+    console.error("Game not Found");
     return;
   }
+  const currentPlayerId = game.players[game.currentPlayerIndex];
+  console.log("Current player ID", currentPlayerId);
+  console.log(game.currentPlayerIndex);
+  console.log(game.players);
+  if (!currentPlayerId) {
+    console.error("Current Player not Found");
+    return;
+  }
+  if (currentPlayerId !== event.playerId) {
+    console.error("Not your Turn");
+    return;
+  }
+  const cardResult = await getPlayerCard(
+    GameRoom.storage,
+    event.playerId,
+    event.cardId
+  );
+  if (cardResult.isErr()) {
+    console.error(cardResult.error);
+    return;
+  }
+  const card = cardResult.value;
+  // if (!canBeLaidOnTop(card, game.discardPile[-1])) {
+  //   console.error("can't be laid on top");
+  //   return;
+  // }
+
   card.color = event.wildColor ?? card.color;
-  GameRoom.db
-    .update(cardsTable)
-    .set({ holder: CardStackID, color: event.wildColor })
-    .where(eq(cardsTable.id, card.id))
-    .run();
 
   switch (card.type) {
     case "reverse":
       await reverse(GameRoom);
       break;
     case "draw-two":
-      nextPlayerDraw(GameRoom, 2);
+      await drawNextPlayer(GameRoom, 2);
       break;
     case "wild-draw-four":
-      nextPlayerDraw(GameRoom, 4);
+      await drawNextPlayer(GameRoom, 4);
       break;
     case "skip":
-      const nextIndex = await getNextPlayerIndex(GameRoom);
-      if (nextIndex !== undefined) {
-        console.error("next index dosen't exists");
+      const nextPlayer = await UpdateNextPlayer(GameRoom.storage);
+      if (nextPlayer?.isErr()) {
+        console.error(nextPlayer.error);
         return;
       }
-      updateCurrentPosition(GameRoom, nextIndex);
       break;
   }
 
   // send Card laid down Event
   console.log("Card laid down", card);
+  await discardCard(GameRoom, card);
+
   GameRoom.sendEvent("CardLaidDown", {
     playerId: event.playerId,
     card: card,
   });
 
-  const nextIndex = await getNextPlayerIndex(GameRoom);
-
-  console.log("nextIndex", nextIndex);
-  if (nextIndex === undefined) {
-    console.error("next index dosen't exists");
-    return;
-  }
-
-  const nextPlayer = await getPlayerbyPositon(GameRoom, nextIndex);
-
-  updateCurrentPosition(GameRoom, nextIndex);
-
-  GameRoom.sendEvent("NextTurn", {
-    playerId: nextPlayer.id,
-  });
-  return;
+  await NextTurn(GameRoom);
 }
 
 async function reverse(GameRoom: GameRoom) {
@@ -93,22 +99,8 @@ async function reverse(GameRoom: GameRoom) {
   GameRoom.db.update(gameTable).set({ direction: flippedDirection }).all();
 }
 
-async function nextPlayerDraw(GameRoom: GameRoom, amount: number) {
-  const nextIndex = await getNextPlayerIndex(GameRoom);
-  if (nextIndex === undefined) {
-    console.error("Next Player could draw the cards, because he dosn't exists");
-    return;
-  }
-  console.log("next Index in draw", nextIndex);
-  const nextPlayer = await getPlayerbyPositon(GameRoom, nextIndex);
-  Array.from({ length: amount }).map(() => {
-    sendDrawCardEvent(nextPlayer.id as PlayerId, GameRoom);
-  });
-}
-
-function updateCurrentPosition(GameRoom: GameRoom, position: number) {
-  void GameRoom.db
-    .update(gameTable)
-    .set({ currentPlayerIndex: position })
-    .run();
+async function drawNextPlayer(GameRoom: GameRoom, number: number) {
+  const nexplayer = await getNextPlayer(GameRoom.storage);
+  if (nexplayer.isErr()) return;
+  await sendDrawCardEvent(nexplayer.value, GameRoom, number);
 }

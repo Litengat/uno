@@ -28,17 +28,15 @@ export async function handleStartGame(
 
   const players = playersResult.value;
 
-  console.log(players);
+  console.log("players", players);
 
-  players.forEach((player) => {
-    Array.from({ length: 7 }).forEach(() => {
-      sendDrawCardEvent(player.id, GameRoom);
-    });
-  });
+  for (const player of players) {
+    await sendDrawCardEvent(player.id, GameRoom, 7);
+  }
 
   updatePlayers(GameRoom);
 
-  const cardResult = await getTopCard(GameRoom);
+  const cardResult = await getTopCard(GameRoom.storage);
   if (cardResult.isErr()) return;
   const card = cardResult.value;
 

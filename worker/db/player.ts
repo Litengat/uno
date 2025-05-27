@@ -1,12 +1,20 @@
 import { err, ok } from "neverthrow";
-import { addPLayerId, Card, getGame } from "./game";
-import { GameRoom } from "@/GameRoom";
+import { GameID, getGame, getTopCard } from "./game";
+import { GameRoom } from "~/GameRoom";
+import { z } from "zod";
+import { Card, CardId } from "./card";
 
-export type PlayerId = `player-${string}`;
+export const PlayerIdSchema = z.literal(`player-${z.string().uuid()}`);
+
+export type PlayerId = z.infer<typeof PlayerIdSchema>;
+
+export type ConnectionState = "Connected" | "Joined" | "Left";
+
 export type Player = {
   id: PlayerId;
   name: string | undefined;
   cards: Card[];
+  connectionState: ConnectionState;
 };
 
 export function getPlayer(storage: DurableObjectStorage, id: PlayerId) {
@@ -18,20 +26,32 @@ export async function addPlayer(
   playerId: PlayerId
 ) {
   const game = await getGame(storage);
+
   if (!game) {
-    throw new Error("Game not found2");
+    throw new Error("Game not found");
   }
 
   const player: Player = {
     id: playerId,
     name: undefined,
     cards: [],
+    connectionState: "Connected",
   };
 
-  addPLayerId(storage, playerId);
-
   storage.put(playerId, player);
+
+  game?.players.push(playerId);
+  storage.put(GameID, game);
   return player;
+}
+export async function removePlayer(GameRoom: GameRoom, playerId: PlayerId) {
+  const game = await getGame(GameRoom.storage);
+  if (game) {
+    game.players = game.players.filter((p) => p !== playerId);
+    GameRoom.storage.put(GameID, game);
+  }
+  GameRoom.storage.put(GameID, game);
+  GameRoom.storage.delete(playerId);
 }
 
 export async function setName(
@@ -43,6 +63,19 @@ export async function setName(
   console.log(player);
   if (!player) return err("Player don't exists");
   player.name = name;
+  storage.put(player.id, player);
+  return ok();
+}
+
+export async function setConnectionStare(
+  storage: DurableObjectStorage,
+  id: PlayerId,
+  state: ConnectionState
+) {
+  const player = await getPlayer(storage, id);
+  console.log(player);
+  if (!player) return err("Player don't exists");
+  player.connectionState = state;
   storage.put(player.id, player);
   return ok();
 }
@@ -64,6 +97,7 @@ export async function getAllPlayers(storage: DurableObjectStorage) {
         id: player.id,
         name: player.name,
         numberOfCards: player.cards.length,
+        connectionState: player.connectionState,
       };
     })
   );
@@ -89,4 +123,53 @@ export async function addCardToPlayer(
   if (!player) return err("Player not found");
   player.cards.push(card);
   storage.put(player.id, player);
+}
+
+export async function getPlayerCard(
+  storage: DurableObjectStorage,
+  playerId: PlayerId,
+  cardId: CardId
+) {
+  const player = await getPlayer(storage, playerId);
+  if (!player) return err("Player not Found");
+
+  const card = player.cards.find((c) => c.id === cardId);
+  if (!card) return err("card not Found");
+  return ok(card);
+}
+
+export async function UpdateNextPlayer(storage: DurableObjectStorage) {
+  const game = await getGame(storage);
+  if (!game) return err("Game Not found");
+  const nextIndex = (game.currentPlayerIndex + 1) % game.players.length;
+  game.currentPlayerIndex = nextIndex;
+  storage.put(GameID, game);
+  return ok(nextIndex);
+}
+export async function getNextPlayer(storage: DurableObjectStorage) {
+  const game = await getGame(storage);
+  if (!game) return err("Game Not found");
+  const nextIndex = (game.currentPlayerIndex + 1) % game.players.length;
+  const nextPlayerId = game.players[nextIndex];
+  return ok(nextPlayerId);
+}
+
+export async function drawNextPlayer(
+  storage: DurableObjectStorage,
+  number: number
+) {
+  const game = await getGame(storage);
+  if (!game) return err("Game not found");
+  const nextIndex = (game.currentPlayerIndex + 1) % game.players.length;
+  const nextPLayerId = game.players[nextIndex];
+  const nextPlayer = await getPlayer(storage, nextPLayerId);
+  if (!nextPlayer) return err("NextPlayer not found");
+
+  for (let index = 0; index < number; index++) {
+    const cardResult = await getTopCard(storage);
+    if (cardResult.isErr()) return err(cardResult.error);
+    nextPlayer.cards.push(cardResult.value);
+  }
+
+  storage.put(nextPLayerId, nextPlayer);
 }

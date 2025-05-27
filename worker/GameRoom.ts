@@ -15,7 +15,13 @@ import { gameTable, playersTable } from "./db/schema.js";
 import { eq } from "drizzle-orm";
 import { handleGameEvent } from "./game/eventHandler.js";
 import { createGame } from "./db/game.js";
-import { addPlayer, PlayerId } from "./db/player.js";
+import {
+  addPlayer,
+  PlayerId,
+  removePlayer,
+  updatePlayers,
+} from "./db/player.js";
+import { connect } from "./game/events/Connect.js";
 
 export const CardStackID = "cardStack";
 
@@ -70,7 +76,7 @@ export class GameRoom extends DurableObject {
     // adding the player to the players map
     this.sessions.set(playerId, server);
 
-    await addPlayer(this.storage, playerId);
+    await connect(this, playerId);
     return new Response(null, {
       status: 101,
       webSocket: client,
@@ -105,6 +111,7 @@ export class GameRoom extends DurableObject {
     }
     this.sessions.set(meta.id, ws);
   }
+
   async webSocketClose(
     ws: WebSocket,
     code: number,
@@ -118,8 +125,9 @@ export class GameRoom extends DurableObject {
       sendError(ws, "Invalid attachment");
       return;
     }
+    console.log(`Websocket ${meta.id} got closed`);
+    removePlayer(this, meta.id);
     this.sessions.delete(meta.id);
-    this.db.delete(playersTable).where(eq(playersTable.id, meta.id)).run();
   }
 
   // send a message to all players

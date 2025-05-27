@@ -8,6 +8,7 @@ import React, {
 import { safeJsonParse } from "@/lib/utils";
 import { EventMap } from "@/events/sendEvents";
 import { handleEvent } from "@/events/events";
+
 type WebSocketContextType = {
   sendEvent: <K extends keyof EventMap>(
     eventName: K,
@@ -39,26 +40,36 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
   const socketRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
+    console.log("Connection State: ", socketRef.current?.readyState);
+    if (socketRef.current) return;
+    console.log("Connecting to WebSocket at", url);
     socketRef.current = new WebSocket(url);
 
     socketRef.current.onopen = () => {
       console.log("WebSocket connected");
     };
 
-    (socketRef.current.onmessage = (event) => {
+    socketRef.current.onmessage = (event) => {
       const parsed = safeJsonParse(event.data);
       if (parsed.isErr()) {
         console.error("Error parsing event", parsed.error);
         return;
       }
+      console.log("Message:", parsed.value);
       const result = handleEvent(parsed.value);
-    }),
-      (socketRef.current.onclose = () => {
-        console.log("WebSocket disconnected");
-      });
+    };
+    socketRef.current.onclose = () => {
+      console.log("WebSocket disconnected");
+    };
 
     return () => {
-      socketRef.current?.close();
+      if (
+        socketRef.current &&
+        !(socketRef.current.readyState === socketRef.current.CONNECTING)
+      ) {
+        console.log("Websocket closes");
+        socketRef.current.close();
+      }
     };
   }, [url]);
 

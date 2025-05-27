@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { GameRoom } from "~/GameRoom";
 
-import { getTopCard } from "~/db/game";
+import { getGame, getTopCard, NextTurn } from "~/db/game";
 import { addCardToPlayer, PlayerId, getPlayer } from "~/db/player";
 
 const DrawCardSchema = z.object({
@@ -13,8 +13,20 @@ const DrawCardSchema = z.object({
 
 export type DrawCardEvent = z.infer<typeof DrawCardSchema>;
 
-export function handleDrawCard(event: DrawCardEvent, GameRoom: GameRoom) {
+export async function handleDrawCard(event: DrawCardEvent, GameRoom: GameRoom) {
+  const game = await getGame(GameRoom.storage);
+  if (!game) {
+    console.error("Game not Found");
+    return;
+  }
+  const currentPlayerId = game.players[game.currentPlayerIndex];
+  if (currentPlayerId !== event.playerId) {
+    console.error("Not your Turn");
+    return;
+  }
   sendDrawCardEvent(event.playerId as PlayerId, GameRoom);
+
+  await NextTurn(GameRoom);
 }
 
 export async function sendDrawCardEvent(
@@ -23,7 +35,7 @@ export async function sendDrawCardEvent(
   number = 1
 ) {
   for (let index = 0; index < number; index++) {
-    const cardResult = await getTopCard(GameRoom);
+    const cardResult = await getTopCard(GameRoom.storage);
 
     if (cardResult.isErr()) {
       console.error(cardResult.error);

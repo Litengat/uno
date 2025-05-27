@@ -1,12 +1,10 @@
 import z from "zod";
-import { playersTable } from "~/db/schema";
 
 import { GameRoom } from "~/GameRoom";
 
 import {
-  addPlayer,
-  getPlayer,
   PlayerId,
+  setConnectionStare,
   setName,
   updatePlayers,
 } from "~/db/player";
@@ -29,8 +27,14 @@ export async function handleJoin(event: JoinEvent, GameRoom: GameRoom) {
     console.error(nameResult.error);
   }
 
-  await GameRoom.sendPlayerEvent(event.playerId as PlayerId, "YourID", {
-    playerId: event.playerId,
-  });
+  const joinResult = await setConnectionStare(
+    GameRoom.storage,
+    event.playerId as PlayerId,
+    "Joined"
+  );
+  if (joinResult.isErr()) {
+    console.error(joinResult.error);
+  }
+
   await updatePlayers(GameRoom);
 }

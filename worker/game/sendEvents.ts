@@ -1,5 +1,5 @@
 import { OtherPlayer } from "~/db/player";
-import { Card } from "~/db/game";
+import { Card } from "~/db/card";
 // 1. Define event types and payloads
 export type EventMap = {
   UpdatePlayers: { players: OtherPlayer[] };

@@ -27,7 +27,7 @@ export const CardColorSchema = z.enum([
 export type CardColor = z.infer<typeof CardColorSchema>;
 
 export const CardSchema = z.object({
-  id: z.string(),
+  id: z.literal(`card-${z.string()}`),
   type: CardTypeSchema,
   color: CardColorSchema,
   number: z.number().optional(),
