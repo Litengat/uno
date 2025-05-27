@@ -16,6 +16,11 @@ export type GameState = {
 export type GameStatus = "waiting" | "running" | "finished";
 
 export async function createGame(storage: DurableObjectStorage) {
+  const dbGame = await getGame(storage);
+  if (dbGame) {
+    console.error("game already exists");
+    return;
+  }
   const deck = createDeck();
   const game: GameState = {
     players: [] as PlayerId[],
@@ -65,4 +70,16 @@ export async function NextTurn(GameRoom: GameRoom) {
     playerId: nextPlayer,
   });
   return;
+}
+
+export async function reverse(storage: DurableObjectStorage) {
+  const game = await getGame(storage);
+  if (!game) {
+    console.error("Game not found");
+    return;
+  }
+
+  console.log("omg reverse");
+  game.direction = game?.direction === 1 ? -1 : 1;
+  storage.put(GameID, game);
 }

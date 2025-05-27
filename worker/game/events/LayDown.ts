@@ -1,21 +1,16 @@
-import { cardsTable, gameTable, playersTable } from "~/db/schema";
-import { eq, and } from "drizzle-orm";
 import { z } from "zod";
-import { CardStackID, GameRoom } from "~/GameRoom";
-import { Card, CardColorSchema } from "~/types";
+import { GameRoom } from "~/GameRoom";
+import { CardColorSchema } from "~/types";
 
 import { sendDrawCardEvent } from "./DrawCard";
 import {
-  getPlayer,
   getPlayerCard,
-  PlayerId,
   UpdateNextPlayer,
   PlayerIdSchema,
   getNextPlayer,
 } from "~/db/player";
-import { canBeLaidOnTop, CardIdSchema } from "~/db/card";
-import { discardCard, getGame, NextTurn } from "~/db/game";
-import { getNextPlayerIndex } from "../players";
+import { CardIdSchema } from "~/db/card";
+import { discardCard, getGame, NextTurn, reverse } from "~/db/game";
 
 export const LayDownEventSchema = z.object({
   type: z.literal("LayDown"),
@@ -42,6 +37,7 @@ export async function handleLayDown(event: LayDownEvent, GameRoom: GameRoom) {
   }
   if (currentPlayerId !== event.playerId) {
     console.error("Not your Turn");
+    console.log("CurrentPlayer", currentPlayerId);
     return;
   }
   const cardResult = await getPlayerCard(
@@ -63,7 +59,7 @@ export async function handleLayDown(event: LayDownEvent, GameRoom: GameRoom) {
 
   switch (card.type) {
     case "reverse":
-      await reverse(GameRoom);
+      await reverse(GameRoom.storage);
       break;
     case "draw-two":
       await drawNextPlayer(GameRoom, 2);
@@ -90,13 +86,6 @@ export async function handleLayDown(event: LayDownEvent, GameRoom: GameRoom) {
   });
 
   await NextTurn(GameRoom);
-}
-
-async function reverse(GameRoom: GameRoom) {
-  const game = await GameRoom.getGame();
-  console.log("omg reverse");
-  const flippedDirection = game?.direction === 1 ? -1 : 1;
-  GameRoom.db.update(gameTable).set({ direction: flippedDirection }).all();
 }
 
 async function drawNextPlayer(GameRoom: GameRoom, number: number) {

@@ -34,6 +34,10 @@ export class GameRoom extends DurableObject {
   storage: DurableObjectStorage;
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
+    console.log("Created...");
+    ctx.storage.list().then((c) => {
+      console.log(c);
+    });
     // create all events
     this.db = drizzle(ctx.storage);
     this.storage = ctx.storage;
@@ -126,7 +130,7 @@ export class GameRoom extends DurableObject {
       return;
     }
     console.log(`Websocket ${meta.id} got closed`);
-    removePlayer(this, meta.id);
+    await removePlayer(this, meta.id);
     this.sessions.delete(meta.id);
   }
 

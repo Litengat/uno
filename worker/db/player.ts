@@ -141,7 +141,9 @@ export async function getPlayerCard(
 export async function UpdateNextPlayer(storage: DurableObjectStorage) {
   const game = await getGame(storage);
   if (!game) return err("Game Not found");
-  const nextIndex = (game.currentPlayerIndex + 1) % game.players.length;
+  const nextIndex1 =
+    (game.currentPlayerIndex + game.direction) % game.players.length;
+  const nextIndex = nextIndex1 < 0 ? game.players.length - 1 : nextIndex1;
   game.currentPlayerIndex = nextIndex;
   storage.put(GameID, game);
   return ok(nextIndex);
