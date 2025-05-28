@@ -1,14 +1,13 @@
 import { z } from "zod";
-import { getRandomCard, sendDrawCardEvent } from "./DrawCard";
-import { updatePlayers } from "../sendEvents";
-import { cardsTable, playersTable } from "~/db/schema";
-import { CardStackID } from "~/GameRoom";
-import { ne } from "drizzle-orm";
+import { sendDrawCardEvent } from "./DrawCard";
+
 import { GameRoom } from "~/GameRoom";
+import { getAllPlayers, updatePlayers } from "~/db/player";
+import { discardCard, getGame, getTopCard } from "~/db/game";
 
 const StartGameEventSchema = z.object({
   type: z.literal("StartGame"),
-  playerid: z.string(),
+  playerId: z.string(),
 });
 
 export type StartGameEvent = z.infer<typeof StartGameEventSchema>;
@@ -20,30 +19,34 @@ export async function handleStartGame(
   console.log("Starting game");
 
   GameRoom.sendEvent("GameStarted", {});
-  const players = await GameRoom.db
-    .select()
-    .from(playersTable)
-    .where(ne(playersTable.id, CardStackID))
-    .all();
-  console.log(players);
-  players.forEach((player) => {
-    Array.from({ length: 7 }).forEach(() => {
-      sendDrawCardEvent(player.id, GameRoom);
-    });
-  });
-  updatePlayers(GameRoom);
-  const card = getRandomCard();
+  const playersResult = await getAllPlayers(GameRoom.storage);
 
-  GameRoom.db
-    .insert(cardsTable)
-    .values({ ...card, holder: CardStackID })
-    .run();
+  if (playersResult.isErr()) {
+    console.error(playersResult.error);
+    return;
+  }
+
+  const players = playersResult.value;
+
+  console.log("players", players);
+
+  for (const player of players) {
+    await sendDrawCardEvent(player.id, GameRoom, 7);
+  }
+
+  updatePlayers(GameRoom);
+
+  const cardResult = await getTopCard(GameRoom.storage);
+  if (cardResult.isErr()) return;
+  const card = cardResult.value;
+
+  discardCard(GameRoom, card);
 
   GameRoom.sendEvent("CardLaidDown", {
-    playerId: event.playerid,
-    card: getRandomCard(),
+    playerId: event.playerId,
+    card: card,
   });
   GameRoom.sendEvent("NextTurn", {
-    playerId: players.sort((a, b) => a.position - b.position)[0].id,
+    playerId: players[0].id,
   });
 }
