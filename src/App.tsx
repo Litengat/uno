@@ -3,8 +3,34 @@ import { Button } from "./components/ui/button";
 
 import { Link } from "react-router";
 import Index from "./lobby/Index";
+import { useAuth } from "./components/AuthContext";
+import { useEffect } from "react";
 
 function App() {
+  const auth = useAuth();
+  console.log(auth.loaded);
+  return !auth.loaded ? (
+    <div>
+      <div>Loading...</div>
+      <button onClick={auth.logout}>Logout</button>
+    </div>
+  ) : (
+    <div>
+      {auth.loggedIn ? (
+        <div>
+          <p>
+            <span>Logged in</span>
+            {auth.userId && <span> as {auth.userId}</span>}
+          </p>
+          {status !== "" && <p>API call: {status}</p>}
+          <button onClick={auth.logout}>Logout</button>
+        </div>
+      ) : (
+        <button onClick={auth.login}>Login with OAuth</button>
+      )}
+    </div>
+  );
+
   return (
     <>
       {/* <Link to="/cardtest">Card </Link>
