@@ -3,24 +3,12 @@ import { Env } from ".";
 
 import { Attachment } from "./types";
 import { safeJsonParse, sendError } from "./utills";
-import {
-  drizzle,
-  type DrizzleSqliteDODatabase,
-} from "drizzle-orm/durable-sqlite";
-import { migrate } from "drizzle-orm/durable-sqlite/migrator";
 
-import migrations from "../drizzle/migrations.js";
 import { EventMap } from "./game/sendEvents.js";
-import { gameTable, playersTable } from "./db/schema.js";
-import { eq } from "drizzle-orm";
+
 import { handleGameEvent } from "./game/eventHandler.js";
 import { createGame } from "./db/game.js";
-import {
-  addPlayer,
-  PlayerId,
-  removePlayer,
-  updatePlayers,
-} from "./db/player.js";
+import { PlayerId, removePlayer } from "./db/player.js";
 import { connect } from "./game/events/Connect.js";
 
 export const CardStackID = "cardStack";
@@ -30,7 +18,6 @@ export const GameID = 0;
 export class GameRoom extends DurableObject {
   sessions: Map<PlayerId, WebSocket> = new Map();
 
-  db: DrizzleSqliteDODatabase;
   storage: DurableObjectStorage;
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
@@ -39,7 +26,7 @@ export class GameRoom extends DurableObject {
       console.log(c);
     });
     // create all events
-    this.db = drizzle(ctx.storage);
+
     this.storage = ctx.storage;
     this.sessions = new Map();
     ctx.getWebSockets().forEach((ws) => {
@@ -161,26 +148,5 @@ export class GameRoom extends DurableObject {
     };
     console.log(`Broadcasting message to ${playerId}:`, JSON.stringify(event));
     this.sessions.get(playerId)?.send(JSON.stringify(event));
-  }
-
-  createCardStack() {
-    this.db.insert(playersTable).values({
-      id: CardStackID,
-      name: "Card Stack",
-      position: -1,
-    });
-  }
-  getGame() {
-    const game = this.db
-      .select()
-      .from(gameTable)
-      .where(eq(gameTable.id, GameID))
-      .get();
-    if (!game) {
-      console.log("Game dosen't exist in Database");
-      throw new Error("Game dosen't exist in Database");
-    }
-
-    return game;
   }
 }
