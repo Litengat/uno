@@ -3,10 +3,24 @@ import { Button } from "./components/ui/button";
 
 import { Link } from "react-router";
 import Index from "./lobby/Index";
+import {
+  SignedIn,
+  SignedOut,
+  SignInButton,
+  UserButton,
+} from "@clerk/clerk-react";
 
 function App() {
   return (
     <>
+      <header>
+        <SignedOut>
+          <SignInButton />
+        </SignedOut>
+        <SignedIn>
+          <UserButton />
+        </SignedIn>
+      </header>
       {/* <Link to="/cardtest">Card </Link>
 
       <Button onClick={websocket} variant="default">
