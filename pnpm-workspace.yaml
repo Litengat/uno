@@ -1,0 +1,5 @@
+packages:
+  - auth
+onlyBuiltDependencies:
+  - esbuild
+  - workerd
