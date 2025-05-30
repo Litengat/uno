@@ -127,6 +127,10 @@ export function handleEvent(event: unknown) {
       setCurrentPlayer(parsed.data.playerId);
       break;
     }
+    case "GameStarted": {
+      console.log("Game Started");
+      break;
+    }
 
     default:
       console.error(`Unknown event type: ${baseEvent.data.type}`);
