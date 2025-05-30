@@ -7,6 +7,7 @@ import App from "./App.tsx";
 import { CreateGame } from "./createGame.tsx";
 import { CardTest } from "./Cardtest.tsx";
 import { Game } from "./Game.tsx";
+import SignIn from "./sign-in.tsx";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -17,6 +18,7 @@ createRoot(document.getElementById("root")!).render(
           <Route path="/create" element={<CreateGame />} />
           <Route path="/cardtest" element={<CardTest />} />
           <Route path="/game/:id" element={<Game />} />
+          <Route path="signin" element={<SignIn />} />
         </Routes>
       </BrowserRouter>
     </ThemeProvider>
