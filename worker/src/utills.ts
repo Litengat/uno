@@ -1,9 +1,11 @@
-import { clsx, type ClassValue } from "clsx";
-import { err, ok } from "neverthrow";
-import { twMerge } from "tailwind-merge";
-
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
+import { ok, err } from "neverthrow";
+export function sendError(ws: WebSocket, message: string): void {
+  ws.send(
+    JSON.stringify({
+      type: "error",
+      message,
+    })
+  );
 }
 
 export function safeJsonParse(jsonString: string) {
