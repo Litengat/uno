@@ -1,7 +1,10 @@
+import { env } from "@/env";
 import { createAuthClient } from "better-auth/react";
 
+console.log(env.NEXT_PUBLIC_APP_URL);
+
 export const authClient = createAuthClient({
-  baseURL: "http://localhost:8787",
+  baseURL: "",
 });
 
 export const { signIn, signOut, signUp, useSession } = authClient;
