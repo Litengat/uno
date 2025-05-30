@@ -1,9 +1,12 @@
-import "dotenv/config";
-import { defineConfig } from "drizzle-kit";
+import { type Config } from "drizzle-kit";
 
-export default defineConfig({
-  out: "./drizzle",
-  schema: "./worker/db/schema.ts",
+import { env } from "@/env";
+
+export default {
+  schema: "./src/server/db/schema.ts",
   dialect: "sqlite",
-  driver: "durable-sqlite",
-});
+  dbCredentials: {
+    url: env.DATABASE_URL,
+  },
+  tablesFilter: ["uno-next_*"],
+} satisfies Config;
