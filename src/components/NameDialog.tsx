@@ -1,3 +1,4 @@
+"use client";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -24,6 +25,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useWebSocket } from "./WebsocketProvider";
+import { authClient } from "@/lib/auth-client";
 
 const DefautName = "defautName";
 
@@ -35,11 +37,11 @@ export function NameDialog({
   setOpen: (open: boolean) => void;
 }) {
   // 1. Define your form.
-  const { sendEvent } = useWebSocket();
+  // const { sendEvent } = useWebSocket();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      username: localStorage.getItem(DefautName) ?? "",
+      username: "",
     },
   });
 
@@ -47,8 +49,12 @@ export function NameDialog({
   function onSubmit(values: z.infer<typeof formSchema>) {
     // Do something with the form values.
     // ✅ This will be type-safe and validated.
-    sendEvent("Join", {
-      name: values.username,
+    // sendEvent("Join", {
+    //   name: values.username,
+    // });
+
+    authClient.updateUser({
+      username: values.username,
     });
     setOpen(false);
     localStorage.setItem(DefautName, values.username);
