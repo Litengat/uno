@@ -4,6 +4,7 @@ import { db } from "@/server/db"; // your drizzle instance
 import * as schema from "@/server/db/schema";
 import { env } from "@/env";
 import { username } from "better-auth/plugins";
+import { anonymous } from "better-auth/plugins";
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -12,7 +13,7 @@ export const auth = betterAuth({
       ...schema,
     },
   }),
-  plugins: [username()],
+  plugins: [username(), anonymous()],
 
   socialProviders: {
     google: {

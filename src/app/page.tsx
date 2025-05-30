@@ -20,6 +20,14 @@ export default function HomePage() {
       >
         Name
       </Button>
+      <Button
+        onClick={async () => {
+          const user = await authClient.signIn.anonymous();
+          console.log(user);
+        }}
+      >
+        Anonymus
+      </Button>
       <h1>Hi {auth.data?.user.displayUsername}</h1>
       <SignIn></SignIn>
       <NameDialog open={open} setOpen={setOpen}></NameDialog>

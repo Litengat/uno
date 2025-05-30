@@ -15,6 +15,13 @@
       "when": 1748631659073,
       "tag": "0001_mushy_talon",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1748634300035,
+      "tag": "0002_steady_quicksilver",
+      "breakpoints": true
     }
   ]
 }

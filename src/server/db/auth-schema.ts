@@ -16,6 +16,7 @@ export const user = sqliteTable("user", {
     .notNull(),
   username: text("username").unique(),
   displayUsername: text("display_username"),
+  isAnonymous: integer("is_anonymous", { mode: "boolean" }),
 });
 
 export const session = sqliteTable("session", {
