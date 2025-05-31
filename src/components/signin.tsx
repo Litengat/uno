@@ -10,25 +10,71 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { useState } from "react";
-import { Loader2, Key } from "lucide-react";
+import { Loader2, Key, User } from "lucide-react";
 import { signIn } from "@/lib/auth-client";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { Separator } from "./ui/separator";
+import { Dialog, DialogHeader } from "./ui/dialog";
+
+type LoginStep = "method" | "username" | "google-username";
+type LoginMethod = "google" | "anonymous" | null;
 
 export default function SignIn() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [step, setStep] = useState<LoginStep>("method");
+  const [loginMethod, setLoginMethod] = useState<LoginMethod>(null);
+  const [username, setUsername] = useState("");
 
+  const [loading, setLoading] = useState(false);
+
+  const handleMethodSelect = (method: LoginMethod) => {
+    setLoginMethod(method);
+    if (method === "google") {
+      setStep("google-username");
+    } else {
+      setStep("username");
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    // Simulate Google OAuth flow
+    console.log("Initiating Google login...");
+    // After Google auth, you might want to ask for username or use Google profile name
+    if (username.trim()) {
+      console.log("Logging in with Google as:", username);
+      setOpen(false);
+      resetDialog();
+    }
+  };
+
+  const handleAnonymousLogin = () => {
+    if (username.trim()) {
+      console.log("Logging in anonymously as:", username);
+      setOpen(false);
+      resetDialog();
+    }
+  };
+
+  const resetDialog = () => {
+    setStep("method");
+    setLoginMethod(null);
+    setUsername("");
+  };
+
+  const goBack = () => {
+    setStep("method");
+    setLoginMethod(null);
+    setUsername("");
+  };
   return (
-    <Card className="max-w-md">
-      <CardHeader>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogHeader>
         <CardTitle className="text-lg md:text-xl">Sign In</CardTitle>
         <CardDescription className="text-xs md:text-sm">
           Enter your email below to login to your account
         </CardDescription>
-      </CardHeader>
+      </DialogHeader>
       <CardContent>
         <div className="grid gap-4">
           <div
@@ -84,6 +130,22 @@ export default function SignIn() {
               Sign in with Google
             </Button>
           </div>
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <Separator className="w-full" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-card px-2">or</span>
+            </div>
+          </div>
+          <Button
+            variant="outline"
+            className={cn("w-full gap-2")}
+            onClick={() => handleMethodSelect("anonymous")}
+          >
+            <User className="h-5 w-5" />
+            Continue anonymously
+          </Button>
         </div>
       </CardContent>
       <CardFooter>
@@ -100,6 +162,6 @@ export default function SignIn() {
           </p>
         </div>
       </CardFooter>
-    </Card>
+    </Dialog>
   );
 }

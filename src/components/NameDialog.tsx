@@ -53,7 +53,7 @@ export function NameDialog({
     //   name: values.username,
     // });
 
-    authClient.updateUser({
+    void authClient.updateUser({
       username: values.username,
     });
     setOpen(false);
@@ -69,7 +69,7 @@ export function NameDialog({
             <DialogHeader>
               <DialogTitle>Name</DialogTitle>
               <DialogDescription>
-                Enter your Name. Click save when you're done.
+                {"Enter your Name. Click save when you're done"}
               </DialogDescription>
             </DialogHeader>
 
