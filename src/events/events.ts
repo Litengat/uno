@@ -12,7 +12,7 @@ const addCard = useHandStore.getState().addCard;
 const addCardStackCard = useCardStackStore.getState().addCardStackCard;
 const decreaseplayerCards = usePlayerStore.getState().decreaseplayerCards;
 const updatePlayerCards = usePlayerStore.getState().updatePlayerCards;
-const setYourId = useGameStore.getState().setYourId;
+
 const setCurrentPlayer = useGameStore.getState().setCurrentPlayer;
 
 // Define event schemas
@@ -38,11 +38,6 @@ const UpdateCardCountSchema = z.object({
   numberOfCards: z.number(),
 });
 
-const YourIDSchema = z.object({
-  type: z.literal("YourID"),
-  playerId: z.string(),
-});
-
 const NextTurnSchema = z.object({
   type: z.literal("NextTurn"),
   playerId: z.string(),
@@ -54,7 +49,6 @@ export type Event = z.infer<
   | typeof CardDrawnSchema
   | typeof CardLaidDownSchema
   | typeof UpdateCardCountSchema
-  | typeof YourIDSchema
   | typeof NextTurnSchema
 >;
 
@@ -105,16 +99,6 @@ export function handleEvent(event: unknown) {
         return;
       }
       updatePlayerCards(parsed.data.playerId, parsed.data.numberOfCards);
-      break;
-    }
-
-    case "YourID": {
-      const parsed = YourIDSchema.safeParse(event);
-      if (!parsed.success) {
-        console.error("YourID event data is invalid:", parsed.error);
-        return;
-      }
-      setYourId(parsed.data.playerId);
       break;
     }
 

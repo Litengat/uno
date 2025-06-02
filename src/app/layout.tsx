@@ -3,6 +3,7 @@ import "@/styles/index.css";
 
 import { type Metadata } from "next";
 import { Geist } from "next/font/google";
+import Providers from "./providers";
 
 export const metadata: Metadata = {
   title: "Create T3 App",
@@ -27,7 +28,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          {children}
+          <Providers>{children}</Providers>
         </ThemeProvider>
       </body>
     </html>

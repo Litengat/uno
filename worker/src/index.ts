@@ -1,6 +1,7 @@
 export interface Env {
 	GAME_ROOM: DurableObjectNamespace<GameRoom>;
 	TRUSTED_ORIGINS: string;
+	APP_URL: string;
 }
 
 // Worker

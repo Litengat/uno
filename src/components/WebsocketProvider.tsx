@@ -5,11 +5,14 @@ import React, {
   useContext,
   useEffect,
   useRef,
+  useState,
   type ReactNode,
 } from "react";
 import { safeJsonParse } from "@/lib/utils";
 import { type EventMap } from "@/events/sendEvents";
 import { handleEvent } from "@/events/events";
+import { authClient } from "@/lib/auth-client";
+import { env } from "@/env";
 
 type WebSocketContextType = {
   sendEvent: <K extends keyof EventMap>(
@@ -40,12 +43,32 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
   children,
 }) => {
   const socketRef = useRef<WebSocket | null>(null);
+  const [JWT, setJWT] = useState<string>();
 
   useEffect(() => {
+    void authClient.getSession({
+      fetchOptions: {
+        onSuccess: (ctx) => {
+          const jwt = ctx.response.headers.get("set-auth-jwt");
+          console.log("JWT inside callback:", jwt);
+          if (!jwt) return;
+          setJWT(jwt);
+        },
+      },
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!JWT) {
+      return;
+    }
+
+    const urlWithJWT = url + "/?token=" + JWT;
+
     console.log("Connection State: ", socketRef.current?.readyState);
     if (socketRef.current) return;
-    console.log("Connecting to WebSocket at", url);
-    socketRef.current = new WebSocket(url);
+    console.log("Connecting to WebSocket at", urlWithJWT);
+    socketRef.current = new WebSocket(urlWithJWT);
 
     socketRef.current.onopen = () => {
       console.log("WebSocket connected");
@@ -75,7 +98,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
         socketRef.current.close();
       }
     };
-  }, [url]);
+  }, [url, JWT]);
 
   const sendEvent = <K extends keyof EventMap>(
     eventName: K,

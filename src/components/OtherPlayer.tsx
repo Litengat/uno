@@ -1,5 +1,7 @@
+import { getUser } from "@/server/users";
 import { CardBack } from "./Cardback";
 import { type Player } from "@/types";
+import { useQuery } from "@tanstack/react-query";
 import { Textfit } from "react-textfit";
 
 const RADIUS = 120;
@@ -15,6 +17,16 @@ export default function OtherPlayer({
 }) {
   const cardNumber = player.numberOfCards;
   const angle = maxAngle / (cardNumber - 1);
+  const {
+    isPending,
+    isError,
+    data: user,
+  } = useQuery({
+    queryFn: () => getUser(player.id),
+    queryKey: ["user", player.id],
+  });
+
+  if (isPending || isError || !user) return;
 
   return (
     <div
@@ -28,7 +40,7 @@ export default function OtherPlayer({
 
           <div className="absolute inset-1 justify-center rounded-full bg-gradient-to-br from-zinc-800 to-zinc-900">
             <Textfit className="p-10 text-center" mode={"single"}>
-              {player.name}
+              {user.displayUsername}
             </Textfit>
           </div>
         </div>

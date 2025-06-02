@@ -23,13 +23,13 @@ import { env } from "@/env";
 
 export default function Game() {
   const { id } = useParams<{ id: string }>();
+  const [openNameDialog, setOpenNameDialog] = useState(true);
+
   if (!id) {
     throw new Error("No game ID provided");
   } // Ensure id is a string
 
-  const url = env.NEXT_PUBLIC_API_URL + "/websocket/" + id;
-
-  const [openNameDialog, setOpenNameDialog] = useState(true);
+  const url = env.NEXT_PUBLIC_WEBSOCKET_URL + "/" + id;
 
   // const { sendMessage, lastMessage, readyState } = useWebSocket(
   //   `ws://localhost:5173/websocket/${id}`,
@@ -50,7 +50,7 @@ export default function Game() {
               <Hand />
             </div>
           </div>
-          <NameDialog open={openNameDialog} setOpen={setOpenNameDialog} />
+          {/* <NameDialog open={openNameDialog} setOpen={setOpenNameDialog} /> */}
           <StartButton />
           {/* <div className=" absolute w-screen h-screen"> */}
           <div className="flex items-center justify-center">

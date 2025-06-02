@@ -22,6 +22,13 @@
       "when": 1748634300035,
       "tag": "0002_steady_quicksilver",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1748892100886,
+      "tag": "0003_cheerful_richard_fisk",
+      "breakpoints": true
     }
   ]
 }

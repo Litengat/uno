@@ -10,6 +10,7 @@ import { handleGameEvent } from './game/eventHandler.js';
 import { createGame } from './db/game.js';
 import { PlayerId, removePlayer } from './db/player.js';
 import { connect } from './game/events/Connect.js';
+import { validateToken } from './worker';
 
 export const CardStackID = 'cardStack';
 
@@ -19,8 +20,10 @@ export class GameRoom extends DurableObject {
 	sessions: Map<PlayerId, WebSocket> = new Map();
 
 	storage: DurableObjectStorage;
+	protected env: Env;
 	constructor(ctx: DurableObjectState, env: Env) {
 		super(ctx, env);
+		this.env = env;
 		console.log('Created...');
 		ctx.storage.list().then((c) => {
 			console.log(c);
@@ -39,7 +42,7 @@ export class GameRoom extends DurableObject {
 		ctx.blockConcurrencyWhile(async () => await createGame(ctx.storage));
 	}
 
-	async fetch(_request: Request): Promise<Response> {
+	async fetch(request: Request): Promise<Response> {
 		// Creates two ends of a WebSocket connection.
 		const webSocketPair = new WebSocketPair();
 		const [client, server] = Object.values(webSocketPair);
@@ -56,8 +59,14 @@ export class GameRoom extends DurableObject {
 		 */
 
 		this.ctx.acceptWebSocket(server);
+		const url = new URL(request.url);
+		console.log(request.url);
+		const token = url.searchParams.get('token');
 
-		const playerId: PlayerId = `player-${crypto.randomUUID()}`;
+		if (!token) throw new Error('Token not found should not happend');
+
+		const payload = (await validateToken(token, this.env.APP_URL)) as { id: PlayerId };
+		const playerId = payload.id;
 		// The `serializeAttachment()` method is used to attach metadata to the WebSocket connection.
 		server.serializeAttachment({
 			id: playerId,
@@ -109,6 +118,7 @@ export class GameRoom extends DurableObject {
 			sendError(ws, 'Invalid attachment');
 			return;
 		}
+
 		console.log(`Websocket ${meta.id} got closed`);
 		await removePlayer(this, meta.id);
 		this.sessions.delete(meta.id);

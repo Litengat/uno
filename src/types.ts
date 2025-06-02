@@ -31,7 +31,6 @@ export type Card = z.infer<typeof CardSchema>;
 
 export const PlayerSchema = z.object({
   id: z.string(),
-  name: z.string().optional(),
   numberOfCards: z.number(),
 });
 export type Player = z.infer<typeof PlayerSchema>;

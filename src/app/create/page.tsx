@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { env } from "@/env";
 import { useRouter } from "next/navigation";
 // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-const url = env.NEXT_PUBLIC_API_URL;
+const url = env.NEXT_PUBLIC_WORKER_URL;
 const create = `${url}/create`;
 
 export default function CreateGame() {

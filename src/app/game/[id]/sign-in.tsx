@@ -30,8 +30,8 @@ export default function SignIn() {
         <div className="grid gap-4">
           <div
             className={cn(
-              "w-full gap-2 flex items-center",
-              "justify-between flex-col"
+              "flex w-full items-center gap-2",
+              "flex-col justify-between",
             )}
           >
             <Button
@@ -51,7 +51,7 @@ export default function SignIn() {
                     onResponse: (ctx) => {
                       setLoading(false);
                     },
-                  }
+                  },
                 );
               }}
             >
@@ -84,7 +84,7 @@ export default function SignIn() {
         </div>
       </CardContent>
       <CardFooter>
-        <div className="flex justify-center w-full border-t py-4">
+        <div className="flex w-full justify-center border-t py-4">
           <p className="text-center text-xs text-neutral-500">
             Powered by{" "}
             <a

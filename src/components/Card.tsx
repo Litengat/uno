@@ -1,7 +1,7 @@
 import { CardRender } from "@/components/CardRender";
 import { Ban, RefreshCw } from "lucide-react";
 import { memo } from "react";
-import { Card, CardType } from "../types";
+import type { Card, CardType } from "../types";
 
 const colors = {
   red: "bg-rose-700",
@@ -59,16 +59,16 @@ const CardPreview = memo(function CardPreview({
       return (
         <CardRender
           color={bgColor}
-          CornerComp={() => <Ban className="w-8 h-8" strokeWidth={3} />}
-          BodyComp={() => <Ban className="w-20 h-20 " strokeWidth={3} />}
+          CornerComp={() => <Ban className="h-8 w-8" strokeWidth={3} />}
+          BodyComp={() => <Ban className="h-20 w-20" strokeWidth={3} />}
         />
       );
     case "reverse":
       return (
         <CardRender
           color={bgColor}
-          CornerComp={() => <RefreshCw className="w-8 h-8" strokeWidth={3} />}
-          BodyComp={() => <RefreshCw className="w-20 h-20 " strokeWidth={3} />}
+          CornerComp={() => <RefreshCw className="h-8 w-8" strokeWidth={3} />}
+          BodyComp={() => <RefreshCw className="h-20 w-20" strokeWidth={3} />}
         />
       );
     case "draw-two":
@@ -103,12 +103,12 @@ export { CardPreview };
 
 function Wind() {
   return (
-    <div className="w-20 h-20 rounded-full overflow-hidden">
-      <div className="h-1/2 flex ">
+    <div className="h-20 w-20 overflow-hidden rounded-full">
+      <div className="flex h-1/2">
         <div className="w-1/2 bg-rose-700"></div>
         <div className="w-1/2 bg-indigo-700"></div>
       </div>
-      <div className="h-1/2 flex">
+      <div className="flex h-1/2">
         <div className="w-1/2 bg-yellow-500"></div>
         <div className="w-1/2 bg-emerald-700"></div>
       </div>
@@ -120,12 +120,12 @@ function Skeleton() {
   return (
     <div
       className={
-        "w-50 aspect-[2/3] rounded-2xl shadow-xl flex flex-col relative overflow-hidden transform transition-transform hover:scale-105 border-dotted border-2 border-gray-500 bg-gray-900/70"
+        "relative flex aspect-[2/3] w-50 transform flex-col overflow-hidden rounded-2xl border-2 border-dotted border-gray-500 bg-gray-900/70 shadow-xl transition-transform hover:scale-105"
         // className="w-50 aspect-[2/3] rounded-2xl shadow-xl flex flex-col relative overflow-hidden transform transition-transform hover:scale-105"
       }
     >
       {/* White oval border */}
-      <div className="absolute inset-6 border-[3px] border-gray-300 border-dotted rounded-full"></div>
+      <div className="absolute inset-6 rounded-full border-[3px] border-dotted border-gray-300"></div>
     </div>
   );
 }

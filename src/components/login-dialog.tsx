@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -13,18 +13,37 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { LogIn, User, ArrowLeft } from "lucide-react";
+import {
+  LogIn,
+  User,
+  ArrowLeft,
+  Loader2,
+  AlertCircle,
+  CheckCircle,
+} from "lucide-react";
 import { authClient, signIn } from "@/lib/auth-client";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { Alert, AlertDescription } from "./ui/alert";
+import { isUsernameUsed } from "@/server/users";
+import { isUtf8 } from "buffer";
 
 type LoginStep = "method" | "username" | "google-username";
 
 export default function LoginDialog() {
   const searchParams = useSearchParams();
+
   const [open, setOpen] = useState(searchParams.get("login") === "true");
 
   const [username, setUsername] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [usernameError, setUsernameError] = useState("");
+  const [isValidating, setIsValidating] = useState(false);
+  const [isUsernameValid, setIsUsernameValid] = useState(false);
+  const [isDisplayNameManuallyEdited, setIsDisplayNameManuallyEdited] =
+    useState(false);
+
   const pathname = usePathname();
+
   const { data: session, error } = authClient.useSession();
 
   const [step, setStep] = useState<LoginStep>(
@@ -40,18 +59,17 @@ export default function LoginDialog() {
     });
   };
 
-  const handleAnonymousLogin = () => {
-    if (username.trim()) {
-      console.log("Logging in anonymously as:", username);
-      setOpen(false);
-      resetDialog();
-    }
+  const handleAnonymousLogin = async () => {
+    await signIn.anonymous();
+    setStep("username");
   };
 
   const submitUsername = () => {
     void authClient.updateUser({
       username: username,
     });
+    setOpen(false);
+    resetDialog();
   };
 
   const resetDialog = () => {
@@ -66,6 +84,61 @@ export default function LoginDialog() {
     setUsername("");
   };
 
+  const validateUsername = async (usernameToCheck: string) => {
+    if (!usernameToCheck.trim()) {
+      setUsernameError("");
+      setIsUsernameValid(false);
+      return;
+    }
+
+    if (usernameToCheck.length < 3) {
+      setUsernameError("Username must be at least 3 characters long");
+      setIsUsernameValid(false);
+      return;
+    }
+
+    if (!/^[a-zA-Z0-9_]+$/.test(usernameToCheck)) {
+      setUsernameError(
+        "Username can only contain letters, numbers, and underscores",
+      );
+      setIsUsernameValid(false);
+      return;
+    }
+
+    setIsValidating(true);
+    setUsernameError("");
+
+    // Simulate API delay
+
+    if (!(await isUsernameUsed(usernameToCheck.toLowerCase()))) {
+      setUsernameError("This username is already taken");
+      setIsUsernameValid(false);
+    } else {
+      setUsernameError("");
+      setIsUsernameValid(true);
+    }
+
+    setIsValidating(false);
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (username) {
+        void validateUsername(username);
+      }
+    }, 700);
+
+    return () => clearTimeout(timer);
+  }, [username]);
+
+  // Auto-sync display name with username unless manually edited
+  useEffect(() => {
+    if (!isDisplayNameManuallyEdited && username) {
+      setDisplayName(username);
+    }
+  }, [username, isDisplayNameManuallyEdited]);
+
+  const isFormValid = isUsernameValid && displayName.trim() && !isValidating;
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -144,31 +217,78 @@ export default function LoginDialog() {
                 >
                   <ArrowLeft className="h-4 w-4" />
                 </Button>
-                Choose a username
+                Complete your profile
               </DialogTitle>
-              <DialogDescription>Enter a username</DialogDescription>
+              <DialogDescription>
+                Choose a unique username and display name for your Google
+                account
+              </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="username">Username</Label>
+                <Label htmlFor="google-username">Username</Label>
+                <div className="relative">
+                  <Input
+                    id="google-username"
+                    placeholder="Enter a unique username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className={`pr-8 ${usernameError ? "border-red-500" : isUsernameValid ? "border-green-500" : ""}`}
+                  />
+                  <div className="absolute top-1/2 right-2 -translate-y-1/2">
+                    {isValidating && (
+                      <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+                    )}
+                    {!isValidating && usernameError && (
+                      <AlertCircle className="h-4 w-4 text-red-500" />
+                    )}
+                    {!isValidating && isUsernameValid && (
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                    )}
+                  </div>
+                </div>
+                {usernameError && (
+                  <p className="flex items-center text-sm text-red-500">
+                    <AlertCircle className="mr-1 h-4 w-4" />
+                    {usernameError}
+                  </p>
+                )}
+                {isUsernameValid && (
+                  <p className="text-sm text-green-600">
+                    ✓ Username is available
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="google-display-name">Display Name</Label>
                 <Input
-                  id="username"
-                  placeholder="Enter your username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && username.trim()) {
-                      submitUsername();
-                    }
+                  id="google-display-name"
+                  placeholder="Enter your display name"
+                  value={displayName}
+                  onChange={(e) => {
+                    setDisplayName(e.target.value);
+                    setIsDisplayNameManuallyEdited(true);
                   }}
                 />
+                <p className="text-muted-foreground text-xs">
+                  Auto-filled from username. You can change this if you prefer.
+                </p>
               </div>
+
               <Button
                 onClick={submitUsername}
                 className="w-full"
-                disabled={!username.trim()}
+                disabled={!isFormValid}
               >
-                Continue
+                {isValidating ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Validating...
+                  </>
+                ) : (
+                  "Complete sign-in"
+                )}
               </Button>
             </div>
           </>

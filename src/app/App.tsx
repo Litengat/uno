@@ -1,6 +1,6 @@
 // import { unstable_ViewTransition as ViewTransition } from "react";
 
-import Index from "./lobby/Index";
+import Index from "./lobbys/Index";
 
 function App() {
   return (

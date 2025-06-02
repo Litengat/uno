@@ -4,7 +4,7 @@ import { GameRoom } from '~/GameRoom';
 import { z } from 'zod';
 import { Card, CardId } from './card';
 
-export const PlayerIdSchema = z.literal(`player-${z.string().uuid()}`);
+export const PlayerIdSchema = z.string();
 
 export type PlayerId = z.infer<typeof PlayerIdSchema>;
 
@@ -12,7 +12,6 @@ export type ConnectionState = 'Connected' | 'Joined' | 'Left';
 
 export type Player = {
 	id: PlayerId;
-	name: string | undefined;
 	cards: Card[];
 	connectionState: ConnectionState;
 };
@@ -30,7 +29,6 @@ export async function addPlayer(storage: DurableObjectStorage, playerId: PlayerI
 
 	const player: Player = {
 		id: playerId,
-		name: undefined,
 		cards: [],
 		connectionState: 'Connected',
 	};
@@ -51,15 +49,6 @@ export async function removePlayer(GameRoom: GameRoom, playerId: PlayerId) {
 	GameRoom.storage.delete(playerId);
 }
 
-export async function setName(storage: DurableObjectStorage, id: PlayerId, name: string) {
-	const player = await getPlayer(storage, id);
-	console.log(player);
-	if (!player) return err("Player don't exists");
-	player.name = name;
-	storage.put(player.id, player);
-	return ok();
-}
-
 export async function setConnectionStare(storage: DurableObjectStorage, id: PlayerId, state: ConnectionState) {
 	const player = await getPlayer(storage, id);
 	console.log(player);
@@ -71,7 +60,6 @@ export async function setConnectionStare(storage: DurableObjectStorage, id: Play
 
 export type OtherPlayer = {
 	id: PlayerId;
-	name: string | undefined;
 	numberOfCards: number;
 };
 
@@ -84,7 +72,6 @@ export async function getAllPlayers(storage: DurableObjectStorage) {
 			if (!player) return;
 			return {
 				id: player.id,
-				name: player.name,
 				numberOfCards: player.cards.length,
 				connectionState: player.connectionState,
 			};
